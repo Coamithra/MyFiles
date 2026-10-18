@@ -281,6 +281,21 @@ namespace Files.App.Data.Contracts
 		bool ShowOpenTerminal { get; set; }
 
 		/// <summary>
+		/// Gets or sets the terminal the Open in terminal commands launch.
+		/// </summary>
+		TerminalType TerminalType { get; set; }
+
+		/// <summary>
+		/// Gets or sets the executable path or alias launched when <see cref="TerminalType"/> is <see cref="TerminalType.Custom"/>.
+		/// </summary>
+		string CustomTerminalPath { get; set; }
+
+		/// <summary>
+		/// Gets or sets the arguments for the custom terminal; {path} is replaced with the folder's path.
+		/// </summary>
+		string CustomTerminalArguments { get; set; }
+
+		/// <summary>
 		/// Gets or sets a value indicating whether or not to show the option to copy an items path.
 		/// </summary>
 		bool ShowCopyPath { get; set; }

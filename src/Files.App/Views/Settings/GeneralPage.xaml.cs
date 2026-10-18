@@ -11,6 +11,8 @@ namespace Files.App.Views.Settings
 	{
 		public ContextMenuDeclutterViewModel ContextMenuDeclutter { get; } = new();
 
+		public TerminalSettingsViewModel Terminal { get; } = new();
+
 		public SidebarDeclutterViewModel SidebarDeclutter { get; } = new();
 
 		public GeneralPage()

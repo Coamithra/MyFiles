@@ -398,6 +398,39 @@
 				</wctcontrols:SettingsExpander.Items>
 			</wctcontrols:SettingsExpander>
 
+			<!--  Terminal  -->
+			<wctcontrols:SettingsCard Description="{helpers:ResourceString Name=TerminalSettingDescription}" Header="{helpers:ResourceString Name=TerminalSetting}">
+				<wctcontrols:SettingsCard.HeaderIcon>
+					<FontIcon Glyph="&#xE756;" />
+				</wctcontrols:SettingsCard.HeaderIcon>
+				<uc:ComboBoxEx AutomationProperties.Name="{helpers:ResourceString Name=TerminalSetting}" SelectedIndex="{x:Bind Terminal.SelectedTerminalIndex, Mode=TwoWay}">
+					<ComboBoxItem Content="{helpers:ResourceString Name=CommandPrompt}" />
+					<ComboBoxItem Content="{helpers:ResourceString Name=PowerShell}" />
+					<ComboBoxItem Content="{helpers:ResourceString Name=WindowsTerminal}" />
+					<ComboBoxItem Content="{helpers:ResourceString Name=Custom}" />
+					<ComboBoxItem Content="{helpers:ResourceString Name=WindowsDefaultTerminal}" />
+				</uc:ComboBoxEx>
+			</wctcontrols:SettingsCard>
+
+			<!--  Custom terminal executable  -->
+			<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=PathOrAlias}" Visibility="{x:Bind Terminal.IsCustomTerminal, Mode=OneWay}">
+				<TextBox
+					Width="240"
+					AutomationProperties.Name="{helpers:ResourceString Name=PathOrAlias}"
+					Text="{x:Bind Terminal.CustomTerminalPath, Mode=TwoWay}" />
+			</wctcontrols:SettingsCard>
+
+			<!--  Custom terminal arguments  -->
+			<wctcontrols:SettingsCard
+				Description="{helpers:ResourceString Name=CustomTerminalArgumentsDescription}"
+				Header="{helpers:ResourceString Name=Arguments}"
+				Visibility="{x:Bind Terminal.IsCustomTerminal, Mode=OneWay}">
+				<TextBox
+					Width="240"
+					AutomationProperties.Name="{helpers:ResourceString Name=Arguments}"
+					Text="{x:Bind Terminal.CustomTerminalArguments, Mode=TwoWay}" />
+			</wctcontrols:SettingsCard>
+
 			<!--  Overflow Options  -->
 			<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=SettingsContextMenuOverflow}">
 				<wctcontrols:SettingsCard.HeaderIcon>

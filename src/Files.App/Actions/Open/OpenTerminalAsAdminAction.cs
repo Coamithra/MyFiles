@@ -6,25 +6,25 @@ namespace Files.App.Actions
 	[GeneratedRichCommand]
 	internal sealed partial class OpenTerminalAsAdminAction : OpenTerminalAction
 	{
-		public override string Label
-			=> Strings.OpenTerminalAsAdmin.GetLocalizedResource();
-
 		public override string Description
 			=> Strings.OpenTerminalAsAdminDescription.GetLocalizedResource();
 
 		public override HotKey HotKey
 			=> new(Keys.Oem3, KeyModifiers.CtrlShift);
 
-		protected override ProcessStartInfo? GetProcessStartInfo(string[] paths)
+		protected override bool IsAdmin
+			=> true;
+
+		protected override List<ProcessStartInfo> GetProcessStartInfos(string[] paths)
 		{
-			var startInfo = base.GetProcessStartInfo(paths);
-			if (startInfo is not null)
+			var startInfos = base.GetProcessStartInfos(paths);
+			foreach (var startInfo in startInfos)
 			{
 				startInfo.Verb = "runas";
 				startInfo.UseShellExecute = true;
 			}
 
-			return startInfo;
+			return startInfos;
 		}
 	}
 }

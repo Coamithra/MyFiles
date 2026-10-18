@@ -13,6 +13,8 @@ namespace Files.App.Actions
 	{
 		private readonly IContentPageContext context;
 
+		private readonly IGeneralSettingsService generalSettings;
+
 		// DelegationTerminal CLSIDs registered by Windows Terminal. When one of these
 		// is the user's default, launching wt.exe gives the user's chosen profile and
 		// supports multi-tab. Source: microsoft/terminal policies/WindowsTerminal.admx.
@@ -22,8 +24,11 @@ namespace Files.App.Actions
 			new([0x1F, 0x3F, 0x63, 0x86, 0x54, 0x64, 0xEC, 0x40, 0x89, 0xCE, 0xDA, 0x4E, 0xBA, 0x97, 0x7E, 0xE2]), // Windows Terminal Preview
 		];
 
+		// The default-terminal probe can start a COM server, so labels reuse the last answer; launches probe afresh
+		private static bool? cachedIsWindowsTerminalDefault;
+
 		public virtual string Label
-			=> Strings.OpenTerminal.GetLocalizedResource();
+			=> TerminalLauncher.GetLabel(GetEffectiveTerminalType(), IsAdmin);
 
 		public virtual string Description
 			=> Strings.OpenTerminalDescription.GetLocalizedResource();
@@ -43,70 +48,60 @@ namespace Files.App.Actions
 		public virtual bool IsAccessibleGlobally
 			=> true;
 
+		protected virtual bool IsAdmin
+			=> false;
+
 		public OpenTerminalAction()
 		{
 			context = Ioc.Default.GetRequiredService<IContentPageContext>();
+			generalSettings = Ioc.Default.GetRequiredService<IUserSettingsService>().GeneralSettingsService;
 
 			context.PropertyChanged += Context_PropertyChanged;
+			generalSettings.PropertyChanged += GeneralSettings_PropertyChanged;
 		}
 
 		public Task ExecuteAsync(object? parameter = null)
 		{
-			var paths = GetPaths();
-			if (paths.Length is 0)
-				return Task.CompletedTask;
-
-			var terminalStartInfo = GetProcessStartInfo(paths);
-			if (terminalStartInfo is null)
+			var startInfos = GetStartInfos();
+			if (startInfos.Count is 0)
 				return Task.CompletedTask;
 
 			MainWindow.Instance.DispatcherQueue.TryEnqueue(() =>
 			{
-				try
+				foreach (var startInfo in startInfos)
 				{
-					Process.Start(terminalStartInfo);
-				}
-				catch (Win32Exception)
-				{
+					try
+					{
+						Process.Start(startInfo);
+					}
+					catch (Win32Exception)
+					{
+					}
 				}
 			});
 
 			return Task.CompletedTask;
 		}
 
-		protected virtual ProcessStartInfo? GetProcessStartInfo(string[] paths)
-		{
-			if (paths.Length is 0)
-				return null;
+		/// <summary>
+		/// The processes <see cref="ExecuteAsync"/> starts for the current target, without starting them.
+		/// </summary>
+		internal List<ProcessStartInfo> GetStartInfos()
+			=> GetProcessStartInfos(GetPaths());
 
-			if (IsWindowsTerminalDefault())
+		/// <summary>
+		/// The terminal setting with Windows default resolved (from the cached probe unless <paramref name="probe"/> is set), and a Custom terminal without an executable treated as Command Prompt.
+		/// </summary>
+		internal TerminalType GetEffectiveTerminalType(bool probe = false)
+			=> generalSettings.TerminalType switch
 			{
-				var startInfo = new ProcessStartInfo
-				{
-					FileName = "wt.exe",
-					UseShellExecute = false,
-					ArgumentList = { "-d", paths[0] }
-				};
-
-				for (int i = 1; i < paths.Length; i++)
-				{
-					startInfo.ArgumentList.Add(";");
-					startInfo.ArgumentList.Add("nt");
-					startInfo.ArgumentList.Add("-d");
-					startInfo.ArgumentList.Add(paths[i]);
-				}
-
-				return startInfo;
-			}
-
-			// Launch cmd.exe when Windows Terminal is not the effective default host.
-			return new()
-			{
-				FileName = "cmd.exe",
-				WorkingDirectory = paths[0],
-				UseShellExecute = true
+				TerminalType.WindowsDefault => (probe || cachedIsWindowsTerminalDefault is null ? (cachedIsWindowsTerminalDefault = IsWindowsTerminalDefault()).Value : cachedIsWindowsTerminalDefault.Value) ? TerminalType.WindowsTerminal : TerminalType.CommandPrompt,
+				TerminalType.Custom when string.IsNullOrWhiteSpace(generalSettings.CustomTerminalPath) => TerminalType.CommandPrompt,
+				var type => type,
 			};
-		}
+
+		protected virtual List<ProcessStartInfo> GetProcessStartInfos(string[] paths)
+			=> TerminalLauncher.Build(GetEffectiveTerminalType(probe: true),generalSettings.CustomTerminalPath, generalSettings.CustomTerminalArguments, paths);
 
 		private static unsafe bool IsWindowsTerminalDefault()
 		{
@@ -174,6 +169,17 @@ namespace Files.App.Actions
 			return context.HasSelection
 				? context.SelectedItems.Any(item => item.PrimaryItemAttribute is StorageItemTypes.Folder && !item.IsArchive)
 				: !isFolderNull;
+		}
+
+		private void GeneralSettings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+		{
+			switch (e.PropertyName)
+			{
+				case nameof(IGeneralSettingsService.TerminalType):
+				case nameof(IGeneralSettingsService.CustomTerminalPath):
+					OnPropertyChanged(nameof(Label));
+					break;
+			}
 		}
 
 		private void Context_PropertyChanged(object? sender, PropertyChangedEventArgs e)
