@@ -15,6 +15,11 @@ namespace Files.App.Data.EventArguments
 
 		public ShellPaneArrangement ShellPaneArrangement { get; set; }
 
+		// History is not part of which folders a tab shows, so equality ignores it
+		public PaneHistory? LeftPaneHistory { get; set; }
+
+		public PaneHistory? RightPaneHistory { get; set; }
+
 		public static bool operator ==(PaneNavigationArguments? a1, PaneNavigationArguments? a2)
 		{
 			if (a1 is null && a2 is null)

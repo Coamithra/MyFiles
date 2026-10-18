@@ -350,6 +350,20 @@ namespace Files.App.ViewModels.Settings
 			}
 		}
 
+		public bool UseEverythingForSearch
+		{
+			get => UserSettingsService.GeneralSettingsService.UseEverythingForSearch;
+			set
+			{
+				if (value != UserSettingsService.GeneralSettingsService.UseEverythingForSearch)
+				{
+					UserSettingsService.GeneralSettingsService.UseEverythingForSearch = value;
+
+					OnPropertyChanged();
+				}
+			}
+		}
+
 		// TODO remove when feature is marked as stable
 		public bool ShowFlattenOptions
 		{

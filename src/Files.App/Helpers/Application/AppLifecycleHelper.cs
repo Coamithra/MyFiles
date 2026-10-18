@@ -418,9 +418,9 @@ namespace Files.App.Helpers
 
 			userSettingsService.GeneralSettingsService.LastSessionTabList = MainPageViewModel.AppInstances.DefaultIfEmpty().Select(tab =>
 			{
-				if (tab is not null && tab.NavigationParameter is not null)
+				if (tab is not null && PaneHistoryHelper.CaptureTab(tab) is { } parameter)
 				{
-					return tab.NavigationParameter.Serialize();
+					return parameter.Serialize();
 				}
 				else
 				{

@@ -709,7 +709,7 @@ namespace Files.App.Data.Factories
 
 			if (canCreateFileInPage)
 			{
-				var cachedNewContextMenuEntries = AddItemService.GetEntries();
+				var cachedNewContextMenuEntries = AddItemService.GetVisibleEntries();
 				cachedNewContextMenuEntries?.ForEach(i =>
 				{
 					if (!string.IsNullOrEmpty(i.IconBase64))

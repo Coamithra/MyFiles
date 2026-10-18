@@ -221,6 +221,21 @@ namespace Files.App.Data.Contracts
 		bool MoveShellExtensionsToSubMenu { get; set; }
 
 		/// <summary>
+		/// Gets or sets a value indicating whether the primary context menu commands show as an icon row instead of regular entries.
+		/// </summary>
+		bool ShowContextMenuIconRow { get; set; }
+
+		/// <summary>
+		/// Gets or sets the names or verbs (with * as a wildcard) of the shell context menu entries to hide.
+		/// </summary>
+		List<string>? HiddenShellMenuEntries { get; set; }
+
+		/// <summary>
+		/// Gets or sets the extensions of the ShellNew entries to hide from the New menus.
+		/// </summary>
+		List<string>? HiddenNewMenuEntries { get; set; }
+
+		/// <summary>
 		/// Gets or sets a value indicating whether or not to show the edit tags menu.
 		/// </summary>
 		bool ShowEditTagsMenu { get; set; }
@@ -299,6 +314,11 @@ namespace Files.App.Data.Contracts
 		/// Gets or sets a value indicating whether or not to show Files in the system tray.
 		/// </summary>
 		bool ShowSystemTrayIcon { get; set; }
+
+		/// <summary>
+		/// Gets or sets a value indicating whether search uses voidtools Everything when it's running.
+		/// </summary>
+		bool UseEverythingForSearch { get; set; }
 
 		/// <summary>
 		/// Gets or sets a value indicating the default option to resolve conflicts.

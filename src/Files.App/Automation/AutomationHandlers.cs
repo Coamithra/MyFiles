@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using CommunityToolkit.WinUI;
+using Files.App.Helpers.ContextFlyouts;
 using Files.App.UserControls.TabBar;
 using System.IO;
 using System.Text.Json;
@@ -24,8 +25,8 @@ namespace Files.App.Automation
 			("select", "Select items in the active pane by name. Params: names (array); empty clears the selection."),
 			("commands", "List app commands with whether each can run now. Params: filter (substring of code or label)."),
 			("command", "Run an app command. Params: code (e.g. NewTab, Refresh), parameter (optional string)."),
-			("contextMenu", "Files' own and shell entries of the right-click menu. Params: names (items; omit for the background menu), shell (default true)."),
-			("newMenu", "Entries of the New submenu that come from the shell (ShellNew)."),
+			("contextMenu", "Files' own and shell entries of the right-click menu, as rendered: primary marks the icon row (only when it is enabled), verb is the shell verb. Params: names (items; omit for the background menu), shell (default true)."),
+			("newMenu", "Entries of the New submenu that come from the shell (ShellNew); hidden marks the ones hidden in Settings."),
 			("sidebar", "Sidebar sections and their items."),
 			("bookmarks", "The Bookmarks tree with ids."),
 			("bookmarks.add", "Bookmark a folder. Params: path, name (optional), parent (group id; top level when omitted), index (default end)."),
@@ -33,9 +34,12 @@ namespace Files.App.Automation
 			("bookmarks.rename", "Rename a bookmark or group. Params: id, name (empty resets a bookmark to its folder's name)."),
 			("bookmarks.move", "Move a bookmark or group as a sidebar drop would. Params: id, target (id; the section header when omitted), position (before, after or into; default into)."),
 			("bookmarks.remove", "Remove a bookmark, or a group with everything in it. Params: id."),
+			("search", "Search and report which backends served it. Params: query, path (default: the active pane's folder; Home allowed), max (default 100; 0 = no limit), limit (paths returned, default 20), ui (default false: run the search through the active pane's results page)."),
 			("tabs.open", "Open a tab. Params: path (optional; Home when omitted)."),
 			("tabs.select", "Select a tab. Params: index."),
 			("tabs.close", "Close a tab. Params: index. Closing the last tab closes the window."),
+			("history", "Back/forward stacks of every pane, in frame stack order (last back entry = where Back goes). Params: index (tab; all when omitted). pending = restored history not applied yet because the pane has not navigated."),
+			("session.endSession", "Run the sign-out handler as if Windows sent WM_QUERYENDSESSION, even in a hidden instance. Returns the restart registration outcome; the registration is undone right after (a dry run)."),
 			("settings.get", "Stored user settings, including session keys. Params: keys (array; all when omitted). Never-changed settings are absent (null)."),
 			("settings.set", "Change user settings as their setters would. Params: values (object of key to value). Returns which changed."),
 			("window.show", "Uncloak and activate the window, for debugging the UI."),
@@ -70,9 +74,12 @@ namespace Files.App.Automation
 				"bookmarks.rename" => Done(RenameBookmark(p)),
 				"bookmarks.move" => Done(MoveBookmark(p)),
 				"bookmarks.remove" => Done(RemoveBookmark(p)),
+				"search" => SearchAsync(p),
 				"tabs.open" => OpenTabAsync(p),
 				"tabs.select" => Done(SelectTab(p)),
 				"tabs.close" => Done(CloseTab(p)),
+				"history" => Done(History(p)),
+				"session.endSession" => Done(EndSession()),
 				"settings.get" => Done(GetSettings(p)),
 				"settings.set" => Done(SetSettings(p)),
 				"window.show" => Done(ShowWindow(true)),
@@ -349,24 +356,31 @@ namespace Files.App.Automation
 		}
 
 		private static JsonArray MenuTree(IEnumerable<ContextMenuFlyoutItemViewModel> items)
-			=> new([.. items.Where(item => item.ShowItem).Select(item => (JsonNode)new JsonObject
+		{
+			// Mirror FastContextFlyout.Build: primary commands are icon-row buttons only while the row is enabled.
+			var showsIconRow = FastContextFlyout.ShowsIconRow;
+			return new([.. items.Where(item => item.ShowItem && !FastContextFlyout.IsOmittedPrimary(item, showsIconRow)).Select(item => (JsonNode)new JsonObject
 			{
 				["text"] = item.Text,
 				["id"] = item.ID,
 				["type"] = item.ItemType.ToString(),
-				["primary"] = item.IsPrimary,
+				["primary"] = item.IsPrimary && showsIconRow,
 				["enabled"] = item.IsEnabled,
 				["hidden"] = item.IsHidden,
+				["verb"] = (item.Tag as Win32ContextMenuItem)?.CommandString,
 				["items"] = item.Items is { Count: > 0 } children ? MenuTree(children) : null,
 			})]);
+		}
 
 		private static JsonNode NewMenu()
 		{
 			var entries = Ioc.Default.GetRequiredService<IAddItemService>().GetEntries() ?? [];
+			var hidden = UserSettings().GeneralSettingsService.HiddenNewMenuEntries ?? [];
 			return new JsonArray([.. entries.Select(entry => (JsonNode)new JsonObject
 			{
 				["name"] = entry.Name,
 				["extension"] = entry.Extension,
+				["hidden"] = !string.IsNullOrEmpty(entry.Extension) && hidden.Contains(entry.Extension, StringComparer.OrdinalIgnoreCase),
 			})]);
 		}
 
@@ -384,6 +398,80 @@ namespace Files.App.Automation
 					["type"] = item.ItemType.ToString(),
 					["items"] = item.Children is IEnumerable<INavigationControlItem> children ? SidebarTree(children) : null,
 				})]);
+		}
+
+		private static async Task<JsonNode?> SearchAsync(JsonObject p)
+		{
+			var query = RequiredString(p, "query");
+			var path = p["path"]?.GetValue<string>();
+			var limit = p["limit"]?.GetValue<int>() ?? 20;
+			var everything = await Task.Run(EverythingSearch.GetStatus);
+			var stopwatch = Stopwatch.StartNew();
+
+			FolderSearchBackends backends;
+			List<ListedItem> results;
+			if (p["ui"]?.GetValue<bool>() ?? false)
+			{
+				if (path is not null)
+					await NavigateAsync(new JsonObject { ["path"] = path });
+
+				var pane = ActivePane();
+				var shellViewModel = pane.ShellViewModel
+					?? throw new AutomationException("The active pane has no folder view.");
+
+				var completed = new TaskCompletionSource();
+				void OnItemLoadStatusChanged(object? sender, ItemLoadStatusChangedEventArgs e)
+				{
+					if (e.Status is ItemLoadStatusChangedEventArgs.ItemLoadStatus.Complete && shellViewModel.IsSearchResults)
+						completed.TrySetResult();
+				}
+
+				shellViewModel.ItemLoadStatusChanged += OnItemLoadStatusChanged;
+				try
+				{
+					pane.SubmitSearch(query);
+					await WaitUntilAsync(TimeSpan.FromSeconds(60), () => completed.Task.IsCompleted, $"The search for \"{query}\" did not finish");
+				}
+				finally
+				{
+					shellViewModel.ItemLoadStatusChanged -= OnItemLoadStatusChanged;
+				}
+
+				backends = FolderSearch.LastResultsPageBackends;
+				results = shellViewModel.FilesAndFolders.ToList();
+			}
+			else
+			{
+				var folder = path ?? ActivePane().ShellViewModel?.WorkingDirectory
+					?? throw new AutomationException("The active pane has no folder; pass \"path\".");
+				if (Path.IsPathFullyQualified(folder))
+					folder = Path.GetFullPath(folder);
+
+				var search = new FolderSearch
+				{
+					Query = query,
+					Folder = folder,
+					MaxItemCount = (uint)(p["max"]?.GetValue<int>() ?? 100),
+				};
+
+				results = [];
+				await search.SearchAsync(results, CancellationToken.None);
+				backends = search.UsedBackends;
+			}
+
+			return new JsonObject
+			{
+				["backends"] = backends.ToString(),
+				["count"] = results.Count,
+				["elapsedMs"] = stopwatch.ElapsedMilliseconds,
+				["everything"] = new JsonObject
+				{
+					["running"] = everything.IsRunning,
+					["databaseLoaded"] = everything.IsDatabaseLoaded,
+					["version"] = everything.Version,
+				},
+				["paths"] = new JsonArray([.. results.Take(limit).Select(item => (JsonNode?)item.ItemPath)]),
+			};
 		}
 
 		private static async Task<JsonNode?> OpenTabAsync(JsonObject p)
@@ -418,6 +506,44 @@ namespace Files.App.Automation
 
 			control.CloseTab(tab);
 			return State();
+		}
+
+		private static JsonNode History(JsonObject p)
+		{
+			var tabs = new JsonArray();
+			for (var i = 0; i < MainPageViewModel.AppInstances.Count; i++)
+			{
+				if (p["index"] is not null && TabAt(p).Index != i)
+					continue;
+
+				var panes = new JsonArray();
+				if (MainPageViewModel.AppInstances[i].TabItemContent is IShellPanesPage panesPage)
+				{
+					foreach (var pane in panesPage.GetPanes())
+					{
+						var (history, isPending) = PaneHistoryHelper.Snapshot(pane);
+						panes.Add((JsonNode)new JsonObject
+						{
+							["path"] = pane.TabBarItemParameter?.NavigationParameter as string ?? pane.NavParams?.NavPath,
+							["pending"] = isPending,
+							["back"] = new JsonArray([.. (history?.Back ?? []).Select(path => (JsonNode?)path)]),
+							["forward"] = new JsonArray([.. (history?.Forward ?? []).Select(path => (JsonNode?)path)]),
+						});
+					}
+				}
+
+				tabs.Add((JsonNode)new JsonObject { ["index"] = i, ["panes"] = panes });
+			}
+
+			return tabs;
+		}
+
+		private static JsonNode EndSession()
+		{
+			SessionEndHelper.OnQueryEndSession(ignoreHidden: true);
+			var outcome = SessionEndHelper.RestartRegistration;
+			SessionEndHelper.ResetRestartRegistration();
+			return new JsonObject { ["restartRegistration"] = outcome };
 		}
 
 		private static JsonNode GetSettings(JsonObject p)
