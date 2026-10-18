@@ -17,12 +17,13 @@ Explorer can only be trimmed through registry hacks and Windhawk hooks, and it c
 The board is a **local** (file-backed) Trello board in the `trello` CLI's local store, not on trello.com.
 
 - **Board:** `MyFiles — Explorer replacement` · id `8bd03a82`. Always pass `--backend local --board 8bd03a82`.
-- **Columns:** `To Do` `1a21de83` · `Doing` `f10844b0` · `Done` `9859000d` (the CLI's `grab` defaults match, so no `--from`/`--to` needed).
+- **Columns:** `To Do` `1a21de83` · `Doing` `f10844b0` · `Done` `9859000d` · `Moot` `5a810eb8` (the CLI's `grab` defaults match, so no `--from`/`--to` needed). Cards that stock Files already covers go to `Moot`, not to the archive.
 - The board is the backlog (Harald's wishlist: declutter-as-preferences plus new features). Check it for live status rather than trusting any summary.
 - **When picking up a card, follow `~/.claude/CONTRIBUTING.md`** with these specifics:
   - Worktrees: `.claude/worktrees/<branch-name>` (ignored via `.claude/.gitignore`). No per-worktree bootstrap beyond `msbuild -restore`.
   - Verification gate: the focused `msbuild` build from the root `CLAUDE.md` succeeds with `-clp:ErrorsOnly`, and the change is checked in the running app. Upstream has no agent-usable test suite.
   - PRs target `main` of `Coamithra/MyFiles` (never upstream): `gh pr create --repo Coamithra/MyFiles --base main`. Ignore the root `CLAUDE.md`'s upstream PR-title prefixes and template.
+  - Agents may merge their own PRs into `main` once the verification gate passes; no review from Harald is needed first.
 
 ## Toolchain
 
