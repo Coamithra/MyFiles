@@ -553,6 +553,10 @@ namespace Files.App.Data.Factories
 				{
 					IsVisible = Commands.UnpinFolderFromSidebar.IsExecutable && UserSettingsService.GeneralSettingsService.ShowPinnedSection && UserSettingsService.GeneralSettingsService.ShowPinToSideBar,
 				}.Build(),
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.AddBookmark)
+				{
+					IsVisible = Commands.AddBookmark.IsExecutable && UserSettingsService.GeneralSettingsService.ShowBookmarksSection,
+				}.Build(),
 				new ContextMenuFlyoutItemViewModelBuilder(Commands.PinToStart)
 				{
 					IsVisible = selectedItems.All(x => (x.PrimaryItemAttribute == StorageItemTypes.Folder || x.IsExecutable || (x is IShortcutItem shortcutItem && FileExtensionHelpers.IsExecutableFile(shortcutItem.TargetPath))) && !x.IsItemPinnedToStart) && UserSettingsService.GeneralSettingsService.ShowPinToStart,

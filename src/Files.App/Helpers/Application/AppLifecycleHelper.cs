@@ -362,6 +362,7 @@ namespace Files.App.Helpers
 					.AddSingleton<IDateTimeFormatter, UserDateTimeFormatter>()
 					.AddSingleton<ISizeProvider, UserSizeProvider>()
 					.AddSingleton<IQuickAccessService, QuickAccessService>()
+					.AddSingleton<IBookmarksService, BookmarksService>()
 					.AddSingleton<IResourcesService, ResourcesService>()
 					.AddSingleton<IWindowsJumpListService, WindowsJumpListService>()
 					.AddSingleton<IStorageTrashBinService, StorageTrashBinService>()

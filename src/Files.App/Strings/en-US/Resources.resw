@@ -1286,6 +1286,46 @@
   <data name="Pinned" xml:space="preserve">
     <value>Pinned</value>
   </data>
+  <data name="Bookmarks" xml:space="preserve">
+    <value>Bookmarks</value>
+  </data>
+  <data name="AddBookmark" xml:space="preserve">
+    <value>Add to Bookmarks</value>
+  </data>
+  <data name="AddBookmarkDescription" xml:space="preserve">
+    <value>Add the selected folders, or the current folder, to Bookmarks</value>
+  </data>
+  <data name="AddBookmarkFromSidebarDescription" xml:space="preserve">
+    <value>Add this folder to Bookmarks</value>
+  </data>
+  <data name="NewBookmarkGroup" xml:space="preserve">
+    <value>New group</value>
+  </data>
+  <data name="NewBookmarkGroupDescription" xml:space="preserve">
+    <value>Create a group in Bookmarks</value>
+  </data>
+  <data name="BookmarkGroupNamePlaceholder" xml:space="preserve">
+    <value>Group name</value>
+  </data>
+  <data name="RenameBookmarkDescription" xml:space="preserve">
+    <value>Rename this bookmark or group</value>
+  </data>
+  <data name="RenameBookmarkDialogTitle" xml:space="preserve">
+    <value>Rename bookmark</value>
+  </data>
+  <data name="RemoveBookmark" xml:space="preserve">
+    <value>Remove from Bookmarks</value>
+  </data>
+  <data name="RemoveBookmarkDescription" xml:space="preserve">
+    <value>Remove this bookmark or group from Bookmarks</value>
+  </data>
+  <data name="RemoveBookmarkGroupDialogTitle" xml:space="preserve">
+    <value>Remove group?</value>
+  </data>
+  <data name="RemoveBookmarkGroupDialogText" xml:space="preserve">
+    <value>"{0}" and everything in it will be removed from Bookmarks. The folders themselves aren't affected.</value>
+    <comment>{0} is the name of a bookmark group.</comment>
+  </data>
   <data name="SidebarLibraries" xml:space="preserve">
     <value>Libraries</value>
   </data>

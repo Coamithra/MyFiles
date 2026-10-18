@@ -209,6 +209,12 @@ namespace Files.App.Services.Settings
 			set => Set(value);
 		}
 
+		public bool ShowBookmarksSection
+		{
+			get => Get(true);
+			set => Set(value);
+		}
+
 		public bool IsPinnedSectionExpanded
 		{
 			get => Get(true);
@@ -248,6 +254,12 @@ namespace Files.App.Services.Settings
 		public bool IsFileTagsSectionExpanded
 		{
 			get => Get(false);
+			set => Set(value);
+		}
+
+		public bool IsBookmarksSectionExpanded
+		{
+			get => Get(true);
 			set => Set(value);
 		}
 

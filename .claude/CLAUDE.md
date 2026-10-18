@@ -59,7 +59,7 @@ python .claude\scripts\files_auto.py select 'names=["notepad.exe"]'
 python .claude\scripts\files_auto.py contextMenu 'names=["notepad.exe"]'
 ```
 
-- `help` lists every method: state, items, navigate, select, commands/command (any app action by its `CommandCodes` name), contextMenu (Files' own and shell entries, `primary` marks the icon row), newMenu, sidebar, tabs.*, settings.get/set, window.show/hide and quit. For multi-step checks, `from files_auto import call` in a Python script.
+- `help` lists every method: state, items, navigate, select, commands/command (any app action by its `CommandCodes` name), contextMenu (Files' own and shell entries, `primary` marks the icon row), newMenu, sidebar, bookmarks.* (the Bookmarks tree in `LocalState\settings\bookmarks.json`: list, add, addGroup, rename, move as a sidebar drop would, remove), search (which backends served it), tabs.*, history (per-pane back/forward stacks), session.endSession (dry run of the sign-out handler), settings.get/set, window.show/hide and quit. For multi-step checks, `from files_auto import call` in a Python script.
 - `-Hidden` launches through the `files-dev.exe` alias with `-AutomationHidden`. The window is DWM-cloaked: it renders and behaves normally but is invisible, absent from Alt+Tab and never takes focus. `window.show` uncloaks it for UI debugging.
 - Call `ping` until `ready` is true before anything else; the client waits up to `--timeout` seconds for the pipe itself.
 - Files restores the previous session's tabs on start, so close or ignore leftover tabs rather than assuming a single Home tab.

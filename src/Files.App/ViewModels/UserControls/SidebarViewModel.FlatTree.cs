@@ -47,7 +47,7 @@ namespace Files.App.ViewModels.UserControls
 		{
 			if (depth > 0 && IsCompactDisplayMode)
 				return;
-			var rowOpacity = item is LocationItem { IsHidden: true } ? Constants.UI.DimItemOpacity : 1.0;
+			var rowOpacity = item is LocationItem { IsHidden: true } or BookmarkLocationItem { IsMissing: true } ? Constants.UI.DimItemOpacity : 1.0;
 			sink.Add(new FlatSidebarItem(item, depth, rowOpacity));
 			if (!item.IsExpanded)
 				return;
