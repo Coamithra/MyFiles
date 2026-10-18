@@ -122,8 +122,8 @@ namespace Files.App.ViewModels.Settings
 			// Save the updated tab list before restarting
 			AppLifecycleHelper.SaveSessionTabs();
 
-			// Launches a new instance of Files
-			await Launcher.LaunchUriAsync(new Uri("files-dev:"));
+			// Launches a new instance of Files as this window
+			await Launcher.LaunchUriAsync(new Uri(WindowSessionManager.PrepareRelaunchUri()));
 
 			// Closes the current instance
 			Environment.Exit(0);

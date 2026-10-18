@@ -105,10 +105,26 @@ namespace Files.App.Data.Items
 
 		protected virtual bool PersistPlacement => false;
 
-		private unsafe void StoreWindowPlacementData()
+		private void StoreWindowPlacementData()
+		{
+			if (CapturePlacementData() is not { } placementData)
+				return;
+
+			var values = GetDataStore(out _, true);
+
+			if (_applicationDataContainer.Containers.ContainsKey("WinUIEx"))
+				_applicationDataContainer.DeleteContainer("WinUIEx");
+
+			values["MainWindowPlacementData"] = placementData;
+		}
+
+		/// <summary>
+		/// Gets the monitor layout and window placement as the base64 blob that is persisted, or null when there is none to persist.
+		/// </summary>
+		internal unsafe string? CapturePlacementData()
 		{
 			if (!PersistPlacement)
-				return;
+				return null;
 
 			// Store monitor info
 			using var data = new SystemIO.MemoryStream();
@@ -133,7 +149,7 @@ namespace Files.App.Data.Items
 				// Closing in fullscreen/compact overlay: persist the last overlapped geometry instead
 				placement = _lastOverlappedPlacement;
 			else
-				return;
+				return null;
 
 			int structSize = Marshal.SizeOf<WINDOWPLACEMENT>();
 			IntPtr buffer = Marshal.AllocHGlobal(structSize);
@@ -145,12 +161,19 @@ namespace Files.App.Data.Items
 			sw.Write(placementData);
 			sw.Flush();
 
-			var values = GetDataStore(out _, true);
+			return Convert.ToBase64String(data.ToArray());
+		}
 
-			if (_applicationDataContainer.Containers.ContainsKey("WinUIEx"))
-				_applicationDataContainer.DeleteContainer("WinUIEx");
+		/// <summary>
+		/// Gets the placement blob applied when the window is first shown; defaults to the one shared by all windows.
+		/// </summary>
+		protected virtual string? GetPlacementToRestore()
+		{
+			var values = GetDataStore(out var oldDataExists, false);
 
-			values["MainWindowPlacementData"] = Convert.ToBase64String(data.ToArray());
+			return values.TryGetValue(oldDataExists ? "WindowPersistance_FilesMainWindow" : "MainWindowPlacementData", out object? value)
+				? value as string
+				: null;
 		}
 
 		private void RestoreWindowPlacementData()
@@ -158,17 +181,10 @@ namespace Files.App.Data.Items
 			if (!PersistPlacement)
 				return;
 
-			var values = GetDataStore(out var oldDataExists, false);
-
-			byte[]? data = null;
-			if (values.TryGetValue(oldDataExists ? "WindowPersistance_FilesMainWindow" : "MainWindowPlacementData", out object? value))
-			{
-				if (value is string base64)
-					data = Convert.FromBase64String(base64);
-			}
-
-			if (data is null)
+			if (GetPlacementToRestore() is not { } base64)
 				return;
+
+			var data = Convert.FromBase64String(base64);
 
 			SystemIO.BinaryReader br = new(new SystemIO.MemoryStream(data));
 

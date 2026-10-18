@@ -260,6 +260,8 @@ namespace Files.App.ViewModels
 				{
 					try
 					{
+						var windowStartup = WindowSessionManager.TakeStartupSession();
+
 						// add last session tabs to closed tabs stack if those tabs are not about to be opened
 						if (!UserSettingsService.AppSettingsService.RestoreTabsOnStartup && !UserSettingsService.GeneralSettingsService.ContinueLastSessionOnStartUp && UserSettingsService.GeneralSettingsService.LastSessionTabList != null)
 						{
@@ -270,7 +272,16 @@ namespace Files.App.ViewModels
 							BaseTabBar.PushRecentTab(items);
 						}
 
-						if (UserSettingsService.AppSettingsService.RestoreTabsOnStartup)
+						// This window's own saved session
+						if (windowStartup.Tabs is { } windowTabs && AppInstances.Count == 0)
+						{
+							// A crash or settings relaunch asked for this restore
+							if (UserSettingsService.AppSettingsService.RestoreTabsOnStartup)
+								UserSettingsService.AppSettingsService.RestoreTabsOnStartup = false;
+
+							await RestoreSessionTabsAsync(windowTabs, windowStartup.SelectedIndex);
+						}
+						else if (UserSettingsService.AppSettingsService.RestoreTabsOnStartup)
 						{
 							UserSettingsService.AppSettingsService.RestoreTabsOnStartup = false;
 							if (UserSettingsService.GeneralSettingsService.LastSessionTabList is not null)
@@ -287,7 +298,8 @@ namespace Files.App.ViewModels
 							foreach (string path in UserSettingsService.GeneralSettingsService.TabsOnStartupList)
 								await NavigationHelpers.AddNewTabByPathAsync(typeof(ShellPanesPage), path, true);
 						}
-						else if (UserSettingsService.GeneralSettingsService.ContinueLastSessionOnStartUp &&
+						else if (windowStartup.UseLastSessionTabList &&
+							UserSettingsService.GeneralSettingsService.ContinueLastSessionOnStartUp &&
 							UserSettingsService.GeneralSettingsService.LastSessionTabList is not null)
 						{
 							if (AppInstances.Count == 0)
@@ -309,13 +321,20 @@ namespace Files.App.ViewModels
 					{
 						try
 						{
-							if (UserSettingsService.GeneralSettingsService.OpenSpecificPageOnStartup &&
+							var windowStartup = WindowSessionManager.TakeStartupSession();
+
+							if (windowStartup.Tabs is { } windowTabs && AppInstances.Count == 0)
+							{
+								await RestoreSessionTabsAsync(windowTabs, windowStartup.SelectedIndex);
+							}
+							else if (UserSettingsService.GeneralSettingsService.OpenSpecificPageOnStartup &&
 									UserSettingsService.GeneralSettingsService.TabsOnStartupList is not null)
 							{
 								foreach (string path in UserSettingsService.GeneralSettingsService.TabsOnStartupList)
 									await NavigationHelpers.AddNewTabByPathAsync(typeof(ShellPanesPage), path, true);
 							}
-							else if (UserSettingsService.GeneralSettingsService.ContinueLastSessionOnStartUp &&
+							else if (windowStartup.UseLastSessionTabList &&
+								UserSettingsService.GeneralSettingsService.ContinueLastSessionOnStartUp &&
 								UserSettingsService.GeneralSettingsService.LastSessionTabList is not null &&
 								AppInstances.Count == 0)
 							{
@@ -347,12 +366,12 @@ namespace Files.App.ViewModels
 				NetworkService.UpdateShortcutsAsync());
 		}
 
-		private async Task RestoreSessionTabsAsync(List<string> sessionTabs)
+		private async Task RestoreSessionTabsAsync(List<string> sessionTabs, int? selectedIndex = null)
 		{
 			if (sessionTabs is null || sessionTabs.Count == 0)
 				return;
 
-			var savedIndex = UserSettingsService.GeneralSettingsService.LastSessionSelectedTabIndex;
+			var savedIndex = selectedIndex ?? UserSettingsService.GeneralSettingsService.LastSessionSelectedTabIndex;
 			if (savedIndex < 0 || savedIndex >= sessionTabs.Count)
 				savedIndex = sessionTabs.Count - 1;
 
