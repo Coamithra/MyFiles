@@ -719,6 +719,27 @@
   <data name="SettingsContextMenuOverflow" xml:space="preserve">
     <value>Move shell extensions into a sub menu</value>
   </data>
+  <data name="ShowContextMenuIconRow" xml:space="preserve">
+    <value>Show cut, copy, rename and delete as an icon row</value>
+  </data>
+  <data name="ShowContextMenuIconRowDescription" xml:space="preserve">
+    <value>When off, they appear as regular entries in the menu</value>
+  </data>
+  <data name="HiddenShellMenuEntries" xml:space="preserve">
+    <value>Hidden context menu entries</value>
+  </data>
+  <data name="HiddenShellMenuEntriesDescription" xml:space="preserve">
+    <value>Entries other apps add to the right-click menu, hidden everywhere including under Show more options. Match an entry's name or verb; * matches any text.</value>
+  </data>
+  <data name="HiddenShellMenuEntriesPlaceholder" xml:space="preserve">
+    <value>Type a name, or pick one seen in a menu since Files started</value>
+  </data>
+  <data name="NewMenuEntries" xml:space="preserve">
+    <value>Entries in the New menu</value>
+  </data>
+  <data name="NewMenuEntriesDescription" xml:space="preserve">
+    <value>Choose which file types the New menu offers. Folder, File and Shortcut always appear.</value>
+  </data>
   <data name="ShowConfirmationWhenDeletingItems" xml:space="preserve">
     <value>Show confirmation dialog when deleting items</value>
   </data>
