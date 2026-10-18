@@ -72,6 +72,19 @@ namespace Files.App.Helpers
 		}
 
 		/// <summary>
+		/// Undoes this process's restart registration and gives up the owner slot. Used by the automation pipe's dry run.
+		/// </summary>
+		public static void ResetRestartRegistration()
+		{
+			if (_restartOwner is null)
+				return;
+
+			PInvoke.UnregisterApplicationRestart();
+			_restartOwner.Dispose();
+			_restartOwner = null;
+		}
+
+		/// <summary>
 		/// Handles WM_ENDSESSION: the process is terminated after this without the window closing, so save the session now.
 		/// </summary>
 		public static void OnEndSession(bool isEnding)

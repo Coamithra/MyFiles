@@ -31,7 +31,7 @@ namespace Files.App.Automation
 			("tabs.select", "Select a tab. Params: index."),
 			("tabs.close", "Close a tab. Params: index. Closing the last tab closes the window."),
 			("history", "Back/forward stacks of every pane, in frame stack order (last back entry = where Back goes). Params: index (tab; all when omitted). pending = restored history not applied yet because the pane has not navigated."),
-			("session.endSession", "Run the sign-out handler as if Windows sent WM_QUERYENDSESSION, even in a hidden instance. Returns the restart registration outcome."),
+			("session.endSession", "Run the sign-out handler as if Windows sent WM_QUERYENDSESSION, even in a hidden instance. Returns the restart registration outcome; the registration is undone right after (a dry run)."),
 			("settings.get", "Stored user settings, including session keys. Params: keys (array; all when omitted). Never-changed settings are absent (null)."),
 			("settings.set", "Change user settings as their setters would. Params: values (object of key to value). Returns which changed."),
 			("window.show", "Uncloak and activate the window, for debugging the UI."),
@@ -445,7 +445,9 @@ namespace Files.App.Automation
 		private static JsonNode EndSession()
 		{
 			SessionEndHelper.OnQueryEndSession(ignoreHidden: true);
-			return new JsonObject { ["restartRegistration"] = SessionEndHelper.RestartRegistration };
+			var outcome = SessionEndHelper.RestartRegistration;
+			SessionEndHelper.ResetRestartRegistration();
+			return new JsonObject { ["restartRegistration"] = outcome };
 		}
 
 		private static JsonNode GetSettings(JsonObject p)
