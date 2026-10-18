@@ -176,6 +176,16 @@ namespace Files.App.Data.Contracts
 		bool ShowBookmarksSection { get; set; }
 
 		/// <summary>
+		/// Gets or sets a value indicating if the home item should be visible in the sidebar.
+		/// </summary>
+		bool ShowHomeSection { get; set; }
+
+		/// <summary>
+		/// Gets or sets the sync folder paths of the cloud drives hidden from the sidebar.
+		/// </summary>
+		List<string>? HiddenSidebarCloudDrives { get; set; }
+
+		/// <summary>
 		/// Gets or sets a value indicating if the pinned section should be expanded.
 		/// </summary>
 		bool IsPinnedSectionExpanded { get; set; }
