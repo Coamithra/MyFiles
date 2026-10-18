@@ -225,5 +225,10 @@ namespace Files.App.Data.Contracts
 		/// Item size in the Columns View
 		/// </summary>
 		ColumnsViewSizeKind ColumnsViewSize { get; set; }
+
+		/// <summary>
+		/// Gets or sets the ids of the Layout menu entries to hide (see <see cref="LayoutMenuVisibility.EntryIds"/>).
+		/// </summary>
+		List<string>? HiddenLayoutMenuEntries { get; set; }
 	}
 }
