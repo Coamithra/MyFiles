@@ -135,7 +135,7 @@ namespace Files.App.ViewModels.UserControls
 
 		/// <summary>
 		/// Resolves a typed program or document name to an existing file without launching anything:
-		/// the current folder, then PATH with PATHEXT, then App Paths.
+		/// the exact name in the current folder, then PATH with PATHEXT, then App Paths.
 		/// </summary>
 		private static string? ResolveLaunchTarget(string name, string? folder)
 		{
@@ -147,17 +147,9 @@ namespace Files.App.ViewModels.UserControls
 
 			if (folder is not null)
 			{
+				// In the current folder only the exact name counts, so a bare word never runs a program that happens to sit there
 				if (GetExistingPath(folder, name, File.Exists) is { } file)
 					return file;
-
-				if (!Path.HasExtension(name))
-				{
-					foreach (var extension in extensions)
-					{
-						if (GetExistingPath(folder, name + extension, File.Exists) is { } program)
-							return program;
-					}
-				}
 			}
 
 			if (name.IndexOfAny(['\\', '/']) >= 0)
