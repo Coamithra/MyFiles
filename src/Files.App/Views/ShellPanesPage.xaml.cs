@@ -645,7 +645,8 @@ namespace Files.App.Views
 				NavParamsLeft = new()
 				{
 					NavPath = paneArgs.LeftPaneNavPathParam,
-					SelectItem = paneArgs.LeftPaneSelectItemParam
+					SelectItem = paneArgs.LeftPaneSelectItemParam,
+					History = paneArgs.LeftPaneHistory
 				};
 
 				// Creates new pane
@@ -657,7 +658,8 @@ namespace Files.App.Views
 				NavParamsRight = new()
 				{
 					NavPath = paneArgs.RightPaneNavPathParam,
-					SelectItem = paneArgs.RightPaneSelectItemParam
+					SelectItem = paneArgs.RightPaneSelectItemParam,
+					History = paneArgs.RightPaneHistory
 				};
 
 				ShellPaneArrangement =

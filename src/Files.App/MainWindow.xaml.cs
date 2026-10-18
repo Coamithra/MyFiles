@@ -187,6 +187,14 @@ namespace Files.App
 								else
 									await InitializeFromCmdLineArgsAsync(rootFrame, ppm, Environment.CurrentDirectory);
 								break;
+
+							// A new window starts fresh instead of reopening the saved session
+							case "window":
+								rootFrame.Navigate(typeof(MainPage),
+									new MainPageNavigationArguments() { Parameter = "Home", IgnoreStartupSettings = true },
+									new SuppressNavigationTransitionInfo());
+								break;
+
 							default:
 								rootFrame.Navigate(typeof(MainPage), null, new SuppressNavigationTransitionInfo());
 								break;
@@ -466,6 +474,10 @@ namespace Files.App
 				result = new(Win32PInvoke.MNC_CLOSE << 16);
 				return true;
 			}
+			else if (message == Windows.Win32.PInvoke.WM_QUERYENDSESSION)
+				SessionEndHelper.OnQueryEndSession();
+			else if (message == Windows.Win32.PInvoke.WM_ENDSESSION)
+				SessionEndHelper.OnEndSession(wParam.Value != 0);
 
 			return false;
 		}

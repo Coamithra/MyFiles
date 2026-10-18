@@ -8,5 +8,7 @@ namespace Files.App.Data.Parameters
 		public string? NavPath { get; set; }
 
 		public string? SelectItem { get; set; }
+
+		public PaneHistory? History { get; set; }
 	}
 }

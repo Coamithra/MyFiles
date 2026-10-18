@@ -335,6 +335,19 @@ namespace Files.App.Data.Items
 						_hasOverlappedPlacement = true;
 						break;
 					}
+				case 0x0016 /*WM_ENDSESSION*/ when param2 != (WPARAM)0:
+					{
+						// The process ends after this without Closed, which is where placement is normally stored
+						try
+						{
+							StoreWindowPlacementData();
+						}
+						catch (Exception)
+						{
+						}
+
+						break;
+					}
 			}
 
 			var pfnOldWndProc = (delegate* unmanaged[Stdcall]<HWND, uint, WPARAM, LPARAM, LRESULT>)_oldWndProc;
