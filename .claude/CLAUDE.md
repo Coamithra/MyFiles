@@ -29,7 +29,22 @@ The board is a **local** (file-backed) Trello board in the `trello` CLI's local 
 
 - Visual Studio 2026 Community (18.x) at `C:\Program Files\Microsoft Visual Studio\18\Community`, with .NET desktop, WinUI application development, Windows App SDK C# templates, Windows 11 SDK 26100, MSVC x64 + ATL. VS 2022 is also installed and is too old for this repo.
 - .NET 10 SDK (pinned by `global.json`). The solution contains C++ projects (Launcher, OpenDialog, SaveDialog), hence MSVC + ATL.
-- Upstream's DevShell example uses the `Professional` path; on this machine substitute `Community`.
+- Upstream's DevShell example uses the `Professional` path and instance id `1ba2cc4e`; on this machine it is `Community`, instance `36c5d38d`. `pwsh` is not installed, so use `powershell.exe` (5.1).
+- `msbuild -restore` alone fails on the C++ Launcher project, which still uses `packages.config`; add `-p:RestorePackagesConfig=true`.
+
+## Build and run
+
+Build, deploy and launch the app from the current checkout (about 1.5 minutes for a warm full build):
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude\scripts\dev-deploy.ps1
+```
+
+`-NoBuild` re-deploys the last build, `-NoLaunch` skips starting it. The script builds `Files.slnx` (Debug x64 by default), copies every file in the build's `Files.App.build.appxrecipe` into `bin\...\win-x64\AppX`, registers that layout as the `FilesDev` package and launches `shell:AppsFolder\FilesDev_ykqwq8d6ps0ag!App`.
+
+- Don't register the raw build output (`bin\...\win-x64\AppxManifest.xml`). Content assets such as `Assets\AppTiles` only exist in the layout, and without them the app crashes about 5 seconds after start with a stowed exception (`0xc000027b`, `80070003`) that never reaches `debug.log`.
+- The registration points at one checkout's layout folder. Deploying from another worktree re-registers the package there and resets its LocalState (settings, `debug.log`).
+- App log: `%LOCALAPPDATA%\Packages\FilesDev_ykqwq8d6ps0ag\LocalState\debug.log`. Native crashes only show up in the Application event log (`Application Error`, `Windows Error Reporting`).
 
 ## Out of scope
 
