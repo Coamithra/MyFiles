@@ -27,7 +27,7 @@ namespace Files.App.Automation
 			("command", "Run an app command. Params: code (e.g. NewTab, Refresh), parameter (optional string)."),
 			("contextMenu", "Files' own and shell entries of the right-click menu, as rendered: primary marks the icon row (only when it is enabled), verb is the shell verb. Params: names (items; omit for the background menu), shell (default true)."),
 			("newMenu", "Entries of the New submenu that come from the shell (ShellNew); hidden marks the ones hidden in Settings."),
-			("sidebar", "Sidebar sections and their items."),
+			("sidebar", "Sidebar sections and their items; selected marks the item the sidebar highlights."),
 			("bookmarks", "The Bookmarks tree with ids."),
 			("bookmarks.add", "Bookmark a folder. Params: path, name (optional), parent (group id; top level when omitted), index (default end)."),
 			("bookmarks.addGroup", "Add a bookmark group. Params: name, parent, index."),
@@ -387,15 +387,17 @@ namespace Files.App.Automation
 		private static JsonNode Sidebar()
 		{
 			var sidebar = Ioc.Default.GetRequiredService<SidebarViewModel>();
+			var selected = sidebar.SidebarSelectedItem;
 			return SidebarTree(sidebar.SidebarItems as IEnumerable<INavigationControlItem> ?? []);
 
-			static JsonArray SidebarTree(IEnumerable<INavigationControlItem> items)
+			JsonArray SidebarTree(IEnumerable<INavigationControlItem> items)
 				=> new([.. items.ToList().Select(item => (JsonNode)new JsonObject
 				{
 					["text"] = item.Text,
 					["path"] = item.Path,
 					["section"] = item.Section.ToString(),
 					["type"] = item.ItemType.ToString(),
+					["selected"] = ReferenceEquals(item, selected),
 					["items"] = item.Children is IEnumerable<INavigationControlItem> children ? SidebarTree(children) : null,
 				})]);
 		}
