@@ -143,6 +143,14 @@ namespace Files.App.Helpers
 		/// </summary>
 		public static WindowStartup TakeStartupSession()
 		{
+			// A window forgotten when it parked comes back as a new window
+			if (_isForgotten && IsEnabled)
+			{
+				_isForgotten = false;
+				WindowId = Guid.NewGuid().ToString("N");
+				StartFresh("fresh");
+			}
+
 			var startup = _pendingStartup;
 			_pendingStartup = new(null, 0, !IsEnabled);
 
