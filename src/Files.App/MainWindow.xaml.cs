@@ -65,7 +65,14 @@ namespace Files.App
 			Closed += OnClosed;
 			try
 			{
-				Activate();
+				if (Automation.AutomationServer.StartHidden)
+				{
+					Automation.AutomationServer.SetWindowCloaked(this, true);
+					AppWindow.Show(false);
+				}
+				else
+					Activate();
+
 				// Let the backdrop paint before main-page construction occupies the UI thread.
 				return await firstFrame.Task;
 			}

@@ -12,13 +12,16 @@ The registration points at this checkout's layout folder. Run it from whichever 
 .EXAMPLE
 powershell -NoProfile -ExecutionPolicy Bypass -File .claude\scripts\dev-deploy.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .claude\scripts\dev-deploy.ps1 -NoBuild -NoLaunch
+powershell -NoProfile -ExecutionPolicy Bypass -File .claude\scripts\dev-deploy.ps1 -NoBuild -Hidden
 #>
 param(
 	[ValidateSet('Debug', 'Release')] [string] $Configuration = 'Debug',
 	[ValidateSet('x64', 'arm64')] [string] $Platform = 'x64',
 	[string] $Target = 'Files.slnx',
 	[switch] $NoBuild,
-	[switch] $NoLaunch
+	[switch] $NoLaunch,
+	# Launch with the window cloaked, for driving the app through .claude\scripts\files_auto.py.
+	[switch] $Hidden
 )
 
 $ErrorActionPreference = 'Stop'
@@ -105,7 +108,14 @@ Add-AppxPackage -Register $manifest -ForceApplicationShutdown
 $package = Get-AppxPackage -Name $name
 "Registered: $($package.PackageFamilyName) from $($package.InstallLocation)"
 
-if (-not $NoLaunch) {
+if ($NoLaunch) { return }
+
+if ($Hidden) {
+	# The execution alias passes the flag through; shell:AppsFolder activation can't.
+	Start-Process (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\files-dev.exe') -ArgumentList '-AutomationHidden'
+	"Launched hidden."
+}
+else {
 	Start-Process "shell:AppsFolder\$($package.PackageFamilyName)!App"
 	"Launched."
 }

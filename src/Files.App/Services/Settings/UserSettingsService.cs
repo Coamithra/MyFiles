@@ -142,6 +142,29 @@ namespace Files.App.Services.Settings
 			return false;
 		}
 
+		/// <summary>
+		/// Every stored setting, including the session and history keys <see cref="ExportSettings"/> leaves out.
+		/// </summary>
+		internal IDictionary<string, JsonElement> GetAllValues()
+			=> base.ExportSettings() as IDictionary<string, JsonElement> ?? new Dictionary<string, JsonElement>();
+
+		/// <summary>
+		/// Sets one setting by its stored name and notifies listeners as a property setter would. Used by the automation endpoint.
+		/// </summary>
+		/// <returns>Whether the value changed.</returns>
+		internal bool SetValueByName(string key, JsonElement value)
+		{
+			if (JsonSettingsDatabase is null || !JsonSettingsDatabase.SetValue(key, value))
+				return false;
+
+			RaiseOnSettingChangedEvent(this, new SettingChangedEventArgs(key, value));
+			IBaseSettingsService[] services = [GeneralSettingsService, FoldersSettingsService, AppearanceSettingsService, InfoPaneSettingsService, LayoutSettingsService, ApplicationSettingsService, AppSettingsService];
+			foreach (var service in services.OfType<BaseObservableJsonSettings>())
+				service.OnPropertyChanged(key);
+
+			return true;
+		}
+
 		private static TSettingsService GetSettingsService<TSettingsService>(ref TSettingsService? settingsServiceMember)
 			where TSettingsService : class, IBaseSettingsService
 		{

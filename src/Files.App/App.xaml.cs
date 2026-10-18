@@ -232,6 +232,7 @@ namespace Files.App
 				}
 
 				await AppLifecycleHelper.InitializeAppComponentsAsync();
+				Automation.AutomationServer.Start();
 			}
 		}
 
