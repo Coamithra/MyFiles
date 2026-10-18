@@ -67,15 +67,22 @@ namespace Files.App.Utils.Storage
 			if (!UserSettingsService.GeneralSettingsService.UseEverythingForSearch)
 				return false;
 
-			// Tags live in Files' own database; a leading $ explicitly asks for Windows Search AQS
-			var query = Query ?? string.Empty;
-			if (query.StartsWith('$') || IsTagQuery(AQSQuery) || WindowsPropertyTermRegex().IsMatch(query))
-				return false;
-
-			return Path.IsPathFullyQualified(folder)
+			return IsEverythingQuery(Query ?? string.Empty)
+				&& Path.IsPathFullyQualified(folder)
 				&& !DriveHelpers.IsMtpPath(folder)
 				&& !FtpHelpers.IsFtpPath(folder)
 				&& !ZipStorageFolder.IsZipPath(folder);
+		}
+
+		/// <summary>
+		/// Whether Everything can serve <paramref name="query"/> rather than Windows Search or the tag database.
+		/// </summary>
+		internal static bool IsEverythingQuery(string query)
+		{
+			// Tags live in Files' own database; a leading $ explicitly asks for Windows Search AQS
+			return !query.StartsWith('$')
+				&& !query.Contains("tag:", StringComparison.OrdinalIgnoreCase)
+				&& !WindowsPropertyTermRegex().IsMatch(query);
 		}
 
 		/// <summary>
@@ -193,7 +200,7 @@ namespace Files.App.Utils.Storage
 			return null;
 		}
 
-		private static unsafe FindCloseSafeHandle StatPath(string path, out WIN32_FIND_DATAW findData)
+		internal static unsafe FindCloseSafeHandle StatPath(string path, out WIN32_FIND_DATAW findData)
 		{
 			WIN32_FIND_DATAW data = default;
 			var handle = PInvoke.FindFirstFileEx(path, FINDEX_INFO_LEVELS.FindExInfoBasic,

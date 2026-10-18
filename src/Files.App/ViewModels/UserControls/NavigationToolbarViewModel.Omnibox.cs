@@ -3,6 +3,7 @@
 
 using CommunityToolkit.WinUI;
 using Files.App.Utils.CommandLine;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.Win32;
 using System.IO;
@@ -27,6 +28,125 @@ namespace Files.App.ViewModels.UserControls
 
 		private static bool IsPathShapedInput(string input, bool isFtp)
 			=> isFtp || Path.IsPathRooted(input) || ShellStorageFolder.IsShellPath(input);
+
+		private const int MaxSearchSuggestions = 8;
+		private static readonly TimeSpan PathModeSearchSuggestionsDelay = TimeSpan.FromMilliseconds(150);
+
+		private CancellationTokenSource _pathModeSuggestionsCts = new();
+
+		/// <summary>
+		/// Where the latest path mode suggestions came from, for automation: "path" (completion or history) or "everything".
+		/// </summary>
+		internal string PathModeSuggestionsSource { get; private set; } = "path";
+
+		/// <summary>
+		/// Starts a path mode suggestions update and supersedes the previous one.
+		/// </summary>
+		private CancellationToken BeginPathModeSuggestions()
+		{
+			if (_isDisposed)
+				return new CancellationToken(canceled: true);
+
+			_pathModeSuggestionsCts.Cancel();
+			_pathModeSuggestionsCts = new();
+			return _pathModeSuggestionsCts.Token;
+		}
+
+		/// <summary>
+		/// Everything matches for non-path text, after a debounce. Returns null, so path completion runs, when they don't
+		/// apply or Everything is unavailable; throws <see cref="OperationCanceledException"/> once newer input supersedes it.
+		/// </summary>
+		private async Task<List<OmnibarPathModeSuggestionModel>?> GetPathModeSearchSuggestionsAsync(CancellationToken token)
+		{
+			var text = PathText;
+			if (GetSearchSuggestionsQuery(text) is not { } query || !TryGetSearchSuggestionsScope(out var scopeFolders))
+				return null;
+
+			await Task.Delay(PathModeSearchSuggestionsDelay, token);
+
+			IReadOnlyList<EverythingSuggestion>? results;
+			try
+			{
+				// Everything runs on its own thread with IPC timeouts; WaitAsync lets newer input move on without it
+				results = await EverythingSuggestions.QueryAsync(query, scopeFolders, MaxSearchSuggestions, token).WaitAsync(token);
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)
+			{
+				App.Logger.LogWarning(ex, "Everything suggestions failed");
+				return null;
+			}
+
+			token.ThrowIfCancellationRequested();
+			if (PathText != text)
+				throw new OperationCanceledException(token);
+
+			return results?.Select(result => new OmnibarPathModeSuggestionModel(
+				result.Path,
+				result.ScopeFolder is { } scope ? result.Path[scope.Length..].TrimStart(Path.DirectorySeparatorChar) : result.Path)).ToList();
+		}
+
+		/// <summary>
+		/// The Everything query for text that Enter would search for, or null for paths, commands, registered URIs and
+		/// queries Everything doesn't serve.
+		/// </summary>
+		private static string? GetSearchSuggestionsQuery(string? text)
+		{
+			var input = text?.Trim();
+			if (string.IsNullOrEmpty(input) || input is "Home" or "ReleaseNotes" or "Settings" || input.StartsWith('>'))
+				return null;
+
+			string query;
+			if (input.StartsWith('?'))
+			{
+				query = input[1..].Trim();
+			}
+			else
+			{
+				if (input.All(c => c is '.' or '\\' or '/'))
+					return null;
+
+				var isFtp = FtpHelpers.IsFtpPath(input);
+				if (IsPathShapedInput(StorageFileExtensions.GetResolvedPath(NormalizePathInput(input, isFtp), isFtp), isFtp))
+					return null;
+
+				if (UriSchemePrefixRegex().Match(input) is { Success: true } scheme && IsRegisteredUrlProtocol(scheme.Value[..^1]))
+					return null;
+
+				query = input;
+			}
+
+			return query.Length > 0 && EverythingSuggestions.IsSuggestableQuery(query) ? query : null;
+		}
+
+		/// <summary>
+		/// The folders Enter would search: the current folder, a library's folders, or everything (null) on Home.
+		/// </summary>
+		private bool TryGetSearchSuggestionsScope(out IReadOnlyList<string>? folders)
+		{
+			folders = null;
+			if (!UserSettingsService.GeneralSettingsService.UseEverythingForSearch ||
+				_InstanceViewModel?.IsPageTypeSettings == true ||
+				ContentPageContext.ShellPage is not { } shellPage)
+				return false;
+
+			if (shellPage.CurrentPageType == typeof(HomePage))
+				return true;
+
+			var workingDirectory = shellPage.ShellViewModel?.WorkingDirectory;
+			IReadOnlyList<string> scope = App.LibraryManager.TryGetLibrary(workingDirectory, out var library)
+				? library.Folders
+				: string.IsNullOrEmpty(workingDirectory) ? [] : [workingDirectory];
+
+			if (scope.Count == 0 || !scope.All(folder =>
+				Path.IsPathFullyQualified(folder) &&
+				!DriveHelpers.IsMtpPath(folder) &&
+				!FtpHelpers.IsFtpPath(folder) &&
+				!ZipStorageFolder.IsZipPath(folder)))
+				return false;
+
+			folders = scope;
+			return true;
+		}
 
 		private async Task<bool> HandleNonPathInputAsync(IShellPage shellPage, string input)
 		{
