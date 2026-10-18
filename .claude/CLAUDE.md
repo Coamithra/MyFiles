@@ -70,6 +70,11 @@ python .claude\scripts\files_auto.py contextMenu 'names=["notepad.exe"]'
 - `navigate` rejects file-system paths that don't exist, because Files reports them with a dialog that a hidden window never shows.
 - Add a method when a card needs one: a `Methods` entry plus a case in `AutomationHandlers.InvokeAsync`. Build results with `System.Text.Json.Nodes` (no reflection).
 
+## Architecture gotchas
+
+- Every Files window is its own process (Ctrl+N launches `files-dev:?window=`). They all share `LocalState\settings\user_settings.json`, but each process caches the whole file and rewrites all of it on any setting write, and `LastSessionTabList` is written on every navigation. User data that several windows edit (bookmarks, for example) belongs in its own file with read-modify-write under a mutex, like `BookmarksService`, never in user settings.
+- Search goes through Everything first (`FolderSearch.Everything.cs`, setting `UseEverythingForSearch`). `tag:` queries, a leading `$` and `System.*` property terms stay on Windows Search, and each folder falls back to Windows Search when Everything isn't running or doesn't index it. The `search` automation method reports which backend served a query.
+
 ## Out of scope
 
 Windows resetting default apps is a Windows association issue, not a file-manager one.
