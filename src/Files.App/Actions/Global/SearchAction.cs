@@ -42,7 +42,9 @@ namespace Files.App.Actions
 			if (context.ShellPage is null)
 				return Task.CompletedTask;
 
-			_ = context.ShellPage.ToolbarViewModel.SwitchToSearchMode();
+			// Fork: with the search mode button hidden, the address bar's path mode searches
+			var toolbar = context.ShellPage.ToolbarViewModel;
+			_ = toolbar.IsOmnibarSearchModeVisible ? toolbar.SwitchToSearchMode() : toolbar.SwitchToPathMode();
 
 			return Task.CompletedTask;
 		}

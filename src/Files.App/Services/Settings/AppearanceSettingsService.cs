@@ -160,6 +160,13 @@ namespace Files.App.Services.Settings
 		}
 
 		/// <inheritdoc/>
+		public bool ShowOmnibarSearchModeButton
+		{
+			get => Get(false);
+			set => Set(value);
+		}
+
+		/// <inheritdoc/>
 		public StatusCenterVisibility StatusCenterVisibility
 		{
 			get => Get(StatusCenterVisibility.Always);
