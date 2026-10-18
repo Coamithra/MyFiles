@@ -17,7 +17,7 @@ namespace Files.App.Utils.CommandLine
 		/// <returns>A collection of parsed command.</returns>
 		public static ParsedCommands ParseUntrustedCommands(string cmdLineString)
 		{
-			var parsedArgs = Parse(SplitArguments(cmdLineString.TrimEnd(), true));
+			var parsedArgs = Parse([.. SplitArguments(cmdLineString.TrimEnd(), true).Where(arg => !Automation.AutomationServer.IsLaunchFlag(arg))]);
 
 			return ParseSplitArguments(parsedArgs);
 		}

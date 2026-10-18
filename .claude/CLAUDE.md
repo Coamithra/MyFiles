@@ -21,7 +21,7 @@ The board is a **local** (file-backed) Trello board in the `trello` CLI's local 
 - The board is the backlog (Harald's wishlist: declutter-as-preferences plus new features). Check it for live status rather than trusting any summary.
 - **When picking up a card, follow `~/.claude/CONTRIBUTING.md`** with these specifics:
   - Worktrees: `.claude/worktrees/<branch-name>` (ignored via `.claude/.gitignore`). No per-worktree bootstrap beyond `msbuild -restore`.
-  - Verification gate: the focused `msbuild` build from the root `CLAUDE.md` succeeds with `-clp:ErrorsOnly`, and the change is checked in the running app. Upstream has no agent-usable test suite.
+  - Verification gate: the focused `msbuild` build from the root `CLAUDE.md` succeeds with `-clp:ErrorsOnly`, and the change is checked in the running app through the automation pipe (see "Driving the app" below), headless unless the change is visual. Upstream has no agent-usable test suite.
   - PRs target `main` of `Coamithra/MyFiles` (never upstream): `gh pr create --repo Coamithra/MyFiles --base main`. Ignore the root `CLAUDE.md`'s upstream PR-title prefixes and template.
   - Agents may merge their own PRs into `main` once the verification gate passes; no review from Harald is needed first.
 
@@ -46,6 +46,25 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude\scripts\dev-depl
 - Don't register the raw build output (`bin\...\win-x64\AppxManifest.xml`). Content assets such as `Assets\AppTiles` only exist in the layout, and without them the app crashes about 5 seconds after start with a stowed exception (`0xc000027b`, `80070003`) that never reaches `debug.log`.
 - The registration points at one checkout's layout folder. Deploying from another worktree re-registers the package there and resets its LocalState (settings, `debug.log`).
 - App log: `%LOCALAPPDATA%\Packages\FilesDev_ykqwq8d6ps0ag\LocalState\debug.log`. Native crashes only show up in the Application event log (`Application Error`, `Windows Error Reporting`).
+
+## Driving the app
+
+Debug builds host a named pipe, `\\.\pipe\Files.Automation.Dev`, that drives and inspects the running app without UI automation (fork code in `src/Files.App/Automation/`). Launch it headless, then call methods with the Python client:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude\scripts\dev-deploy.ps1 -Hidden
+python .claude\scripts\files_auto.py help
+python .claude\scripts\files_auto.py navigate path=C:\Windows
+python .claude\scripts\files_auto.py select 'names=["notepad.exe"]'
+python .claude\scripts\files_auto.py contextMenu 'names=["notepad.exe"]'
+```
+
+- `help` lists every method: state, items, navigate, select, commands/command (any app action by its `CommandCodes` name), contextMenu (Files' own and shell entries, `primary` marks the icon row), newMenu, sidebar, tabs.*, settings.get/set, window.show/hide and quit. For multi-step checks, `from files_auto import call` in a Python script.
+- `-Hidden` launches through the `files-dev.exe` alias with `-AutomationHidden`. The window is DWM-cloaked: it renders and behaves normally but is invisible, absent from Alt+Tab and never takes focus. `window.show` uncloaks it for UI debugging.
+- Call `ping` until `ready` is true before anything else; the client waits up to `--timeout` seconds for the pipe itself.
+- Files restores the previous session's tabs on start, so close or ignore leftover tabs rather than assuming a single Home tab.
+- The pipe is Debug-only (`#if DEBUG`) and accepts only the current user. Requests are one JSON line each (`{"id":1,"method":...,"params":{...}}`), answered with `result` or `error`.
+- Add a method when a card needs one: a `Methods` entry plus a case in `AutomationHandlers.InvokeAsync`. Build results with `System.Text.Json.Nodes` (no reflection).
 
 ## Out of scope
 
