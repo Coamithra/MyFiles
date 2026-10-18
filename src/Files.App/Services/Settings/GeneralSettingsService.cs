@@ -257,6 +257,24 @@ namespace Files.App.Services.Settings
 			set => Set(value);
 		}
 
+		public bool ShowContextMenuIconRow
+		{
+			get => Get(false);
+			set => Set(value);
+		}
+
+		public List<string>? HiddenShellMenuEntries
+		{
+			get => Get<List<string>>(null);
+			set => Set(value);
+		}
+
+		public List<string>? HiddenNewMenuEntries
+		{
+			get => Get<List<string>>(null);
+			set => Set(value);
+		}
+
 		public bool ShowPinToSideBar
 		{
 			get => Get(true);

@@ -126,6 +126,11 @@ namespace Files.App.Helpers
 			if (cancellationToken.IsCancellationRequested)
 				return;
 
+			// Drop the entries the user hid; the separator handling below tidies up after them
+			var blocklist = ShellMenuBlocklist.FromSettings(UserSettingsService.GeneralSettingsService);
+			if (!blocklist.IsEmpty)
+				menuFlyoutItems = menuFlyoutItems.Where(x => x.Type == MENU_ITEM_TYPE.MFT_SEPARATOR || IsReservedShellItem(x) || !blocklist.Matches(x.CommandString, ExtractLabelAndAccessKey(x.Label ?? string.Empty).Label)).ToList();
+
 			var itemsCount = 0; // Separators do not count for reaching the overflow threshold
 			var menuItems = menuFlyoutItems.TakeWhile(x => x.Type == MENU_ITEM_TYPE.MFT_SEPARATOR || ++itemsCount <= itemsBeforeOverflow).ToList();
 			var overflowItems = menuFlyoutItems.Except(menuItems).ToList();
@@ -187,6 +192,8 @@ namespace Files.App.Helpers
 
 					var menuLayoutSubItem = CreateShellMenuItem(menuFlyoutItem, image);
 					menuLayoutSubItem.Items = [];
+					if (!IsReservedShellItem(menuFlyoutItem))
+						ShellMenuBlocklist.RecordSeen(menuLayoutSubItem.Text);
 
 					if (menuFlyoutItem.SubItems.Any())
 					{
@@ -206,6 +213,8 @@ namespace Files.App.Helpers
 				else if (!string.IsNullOrEmpty(menuFlyoutItem.Label))
 				{
 					var menuLayoutItem = CreateShellMenuItem(menuFlyoutItem, image);
+					if (!IsReservedShellItem(menuFlyoutItem))
+						ShellMenuBlocklist.RecordSeen(menuLayoutItem.Text);
 					menuLayoutItem.Command = new AsyncRelayCommand<object>(x => InvokeShellMenuItemAsync(contextMenu, x));
 					menuLayoutItem.CommandParameter = menuFlyoutItem;
 					menuItemsListLocal.Insert(0, menuLayoutItem);
@@ -255,6 +264,14 @@ namespace Files.App.Helpers
 				//contextMenu.Dispose(); // Prevents some menu items from working (TBC)
 			}
 		}
+
+		private static readonly Lazy<string> sendToLabel = new(() => Win32Helper.ExtractStringFromDLL("shell32.dll", 30312));
+
+		/// <summary>
+		/// Open with and Send to can't be hidden by the user's blocklist: Files swaps its own placeholders for them.
+		/// </summary>
+		private static bool IsReservedShellItem(Win32ContextMenuItem item)
+			=> item.CommandString is "openas" or "sendto" || string.Equals(item.Label, sendToLabel.Value);
 
 		public static List<ContextMenuFlyoutItemViewModel>? GetOpenWithItems(List<ContextMenuFlyoutItemViewModel> flyout)
 		{

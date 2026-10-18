@@ -12,10 +12,10 @@ using WinRT;
 namespace Files.App.Helpers.ContextFlyouts
 {
 	/// <summary>
-	/// Lightweight MenuFlyout-based context menu host. Renders commands as regular menu items plus a horizontal
-	/// icon-button row for the primary commands. Owns the open-direction handling: placement is resolved before
-	/// the first render so the primary row sits next to the pointer (top when opening downward, bottom when
-	/// opening upward) without visibly moving after the menu appears.
+	/// Lightweight MenuFlyout-based context menu host. Renders commands as regular menu items plus, when the user
+	/// setting enables it, a horizontal icon-button row for the primary commands. Owns the open-direction
+	/// handling: placement is resolved before the first render so the primary row sits next to the pointer (top
+	/// when opening downward, bottom when opening upward) without visibly moving after the menu appears.
 	/// </summary>
 	public sealed class FastContextFlyout
 	{
@@ -67,17 +67,37 @@ namespace Files.App.Helpers.ContextFlyouts
 		}
 
 		/// <summary>
-		/// Builds the given models into the menu: the primary commands as an icon-button row on top, the rest as
-		/// regular menu items. The overflow placeholder models ("ItemOverflow"/"OverflowSeparator") are markers
-		/// only and are skipped; shell loaders append a real "Show more options" submenu instead.
+		/// Whether the primary commands render as the icon-button row (a user setting); otherwise they render as
+		/// regular menu items where they sit in the model list.
+		/// </summary>
+		public static bool ShowsIconRow
+			=> (userSettingsService ??= Ioc.Default.GetRequiredService<IUserSettingsService>()).GeneralSettingsService.ShowContextMenuIconRow;
+
+		/// <summary>
+		/// Without the icon row, disabled primary commands are left out: some are forced visible only to keep the
+		/// row's layout stable, and as text entries they would just be greyed-out lines.
+		/// </summary>
+		public static bool IsOmittedPrimary(ContextMenuFlyoutItemViewModel model, bool showsIconRow)
+			=> model.IsPrimary && !showsIconRow && !model.IsEnabled;
+
+		/// <summary>
+		/// Builds the given models into the menu: the primary commands as an icon-button row on top when the
+		/// setting enables it (otherwise as regular items in place), the rest as regular menu items. The overflow
+		/// placeholder models ("ItemOverflow"/"OverflowSeparator") are markers only and are skipped; shell loaders
+		/// append a real "Show more options" submenu instead.
 		/// </summary>
 		public void Build(List<ContextMenuFlyoutItemViewModel> models)
 		{
 			Reset();
 
-			var primary = models.Where(x => x.IsPrimary && !x.IsHidden && x.ShowItem).ToList();
+			var showsIconRow = ShowsIconRow;
+			List<ContextMenuFlyoutItemViewModel> primary = showsIconRow
+				? models.Where(x => x.IsPrimary && !x.IsHidden && x.ShowItem).ToList()
+				: [];
 			var secondary = models
-				.Where(x => !x.IsPrimary && x.ID != "ItemOverflow" && (x.Tag as string) is not ("ItemOverflow" or "OverflowSeparator"))
+				.Where(x => x.IsPrimary
+					? !showsIconRow && !x.IsHidden && x.ShowItem && !IsOmittedPrimary(x, showsIconRow)
+					: x.ID != "ItemOverflow" && (x.Tag as string) is not ("ItemOverflow" or "OverflowSeparator"))
 				.ToList();
 
 			if (primary.Count > 0)

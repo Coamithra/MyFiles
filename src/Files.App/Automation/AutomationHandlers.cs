@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using CommunityToolkit.WinUI;
+using Files.App.Helpers.ContextFlyouts;
 using Files.App.UserControls.TabBar;
 using System.IO;
 using System.Text.Json;
@@ -24,8 +25,8 @@ namespace Files.App.Automation
 			("select", "Select items in the active pane by name. Params: names (array); empty clears the selection."),
 			("commands", "List app commands with whether each can run now. Params: filter (substring of code or label)."),
 			("command", "Run an app command. Params: code (e.g. NewTab, Refresh), parameter (optional string)."),
-			("contextMenu", "Files' own and shell entries of the right-click menu. Params: names (items; omit for the background menu), shell (default true)."),
-			("newMenu", "Entries of the New submenu that come from the shell (ShellNew)."),
+			("contextMenu", "Files' own and shell entries of the right-click menu, as rendered: primary marks the icon row (only when it is enabled), verb is the shell verb. Params: names (items; omit for the background menu), shell (default true)."),
+			("newMenu", "Entries of the New submenu that come from the shell (ShellNew); hidden marks the ones hidden in Settings."),
 			("sidebar", "Sidebar sections and their items."),
 			("search", "Search and report which backends served it. Params: query, path (default: the active pane's folder; Home allowed), max (default 100; 0 = no limit), limit (paths returned, default 20), ui (default false: run the search through the active pane's results page)."),
 			("tabs.open", "Open a tab. Params: path (optional; Home when omitted)."),
@@ -339,24 +340,31 @@ namespace Files.App.Automation
 		}
 
 		private static JsonArray MenuTree(IEnumerable<ContextMenuFlyoutItemViewModel> items)
-			=> new([.. items.Where(item => item.ShowItem).Select(item => (JsonNode)new JsonObject
+		{
+			// Mirror FastContextFlyout.Build: primary commands are icon-row buttons only while the row is enabled.
+			var showsIconRow = FastContextFlyout.ShowsIconRow;
+			return new([.. items.Where(item => item.ShowItem && !FastContextFlyout.IsOmittedPrimary(item, showsIconRow)).Select(item => (JsonNode)new JsonObject
 			{
 				["text"] = item.Text,
 				["id"] = item.ID,
 				["type"] = item.ItemType.ToString(),
-				["primary"] = item.IsPrimary,
+				["primary"] = item.IsPrimary && showsIconRow,
 				["enabled"] = item.IsEnabled,
 				["hidden"] = item.IsHidden,
+				["verb"] = (item.Tag as Win32ContextMenuItem)?.CommandString,
 				["items"] = item.Items is { Count: > 0 } children ? MenuTree(children) : null,
 			})]);
+		}
 
 		private static JsonNode NewMenu()
 		{
 			var entries = Ioc.Default.GetRequiredService<IAddItemService>().GetEntries() ?? [];
+			var hidden = UserSettings().GeneralSettingsService.HiddenNewMenuEntries ?? [];
 			return new JsonArray([.. entries.Select(entry => (JsonNode)new JsonObject
 			{
 				["name"] = entry.Name,
 				["extension"] = entry.Extension,
+				["hidden"] = !string.IsNullOrEmpty(entry.Extension) && hidden.Contains(entry.Extension, StringComparer.OrdinalIgnoreCase),
 			})]);
 		}
 
