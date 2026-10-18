@@ -406,6 +406,20 @@ namespace Files.App.ViewModels.Settings
 			}
 		}
 
+		public bool ShowOmnibarSearchModeButton
+		{
+			get => UserSettingsService.AppearanceSettingsService.ShowOmnibarSearchModeButton;
+			set
+			{
+				if (value != UserSettingsService.AppearanceSettingsService.ShowOmnibarSearchModeButton)
+				{
+					UserSettingsService.AppearanceSettingsService.ShowOmnibarSearchModeButton = value;
+
+					OnPropertyChanged();
+				}
+			}
+		}
+
 		private string selectedStatusCenterVisibilityOption = null!;
 		public string SelectedStatusCenterVisibilityOption
 		{

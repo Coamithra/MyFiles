@@ -4528,6 +4528,12 @@
   <data name="ShowShelfPaneButtonInAddressBar" xml:space="preserve">
     <value>Show shelf pane toggle in address bar</value>
   </data>
+  <data name="ShowSearchButtonInAddressBar" xml:space="preserve">
+    <value>Show search button in address bar</value>
+  </data>
+  <data name="ShowSearchButtonInAddressBarDescription" xml:space="preserve">
+    <value>Text typed in the address bar that isn't a path, command, app or link is searched for either way</value>
+  </data>
   <data name="Shelf" xml:space="preserve">
     <value>Shelf</value>
     <comment>'Shelf' refers to the Shelf Pane feature, where users can conveniently drag and drop files for quick access and perform bulk actions with ease.</comment>
@@ -4630,6 +4636,9 @@
   </data>
   <data name="OmnibarPathModeTextPlaceholder" xml:space="preserve">
     <value>Enter a path to navigate to...</value>
+  </data>
+  <data name="OmnibarPathModeSearchTextPlaceholder" xml:space="preserve">
+    <value>Enter a path, or type to search...</value>
   </data>
   <data name="OmnibarCommandPaletteModeTextPlaceholder" xml:space="preserve">
     <value>Find features and commands...</value>

@@ -246,7 +246,7 @@
 				IsDefault="True"
 				ItemsSource="{x:Bind ViewModel.PathModeSuggestionItems, Mode=OneWay}"
 				ModeName="{x:Bind Commands.EditPath.LabelWithHotKey, Mode=OneWay}"
-				PlaceholderText="{helpers:ResourceString Name=OmnibarPathModeTextPlaceholder}"
+				PlaceholderText="{helpers:ResourceString Name=OmnibarPathModeSearchTextPlaceholder}"
 				Text="{x:Bind ViewModel.PathText, Mode=TwoWay}"
 				TextMemberPath="Path">
 				<controls:OmnibarMode.ContentOnInactive>
@@ -355,7 +355,8 @@
 				ModeName="{x:Bind Commands.Search.LabelWithHotKey, Mode=OneWay}"
 				PlaceholderText="{x:Bind ViewModel.OmnibarSearchModePlaceholder, Mode=OneWay}"
 				Text="{x:Bind ViewModel.OmnibarSearchModeText, Mode=TwoWay}"
-				UpdateTextOnSelect="False">
+				UpdateTextOnSelect="False"
+				Visibility="{x:Bind ViewModel.IsOmnibarSearchModeVisible, Mode=OneWay, FallbackValue=Collapsed}">
 				<controls:OmnibarMode.ItemTemplate>
 					<DataTemplate x:DataType="datamodels:SuggestionModel">
 						<Grid ColumnSpacing="8" Tag="{x:Bind ItemPath}">

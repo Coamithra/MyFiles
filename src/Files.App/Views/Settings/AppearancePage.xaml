@@ -265,6 +265,11 @@
 						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=ShowShelfPaneButtonInAddressBar}" IsOn="{x:Bind ViewModel.ShowShelfPaneToggleButton, Mode=TwoWay}" />
 					</wctcontrols:SettingsCard>
 
+					<!--  Show search mode button  -->
+					<wctcontrols:SettingsCard Description="{helpers:ResourceString Name=ShowSearchButtonInAddressBarDescription}" Header="{helpers:ResourceString Name=ShowSearchButtonInAddressBar}">
+						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=ShowSearchButtonInAddressBar}" IsOn="{x:Bind ViewModel.ShowOmnibarSearchModeButton, Mode=TwoWay}" />
+					</wctcontrols:SettingsCard>
+
 					<!--  Show status center  -->
 					<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=ShowStatusCenterButton}">
 						<uc:ComboBoxEx

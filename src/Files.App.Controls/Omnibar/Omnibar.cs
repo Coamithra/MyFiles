@@ -31,6 +31,7 @@ namespace Files.App.Controls
 		private string _userInput = string.Empty;
 		private OmnibarTextChangeReason _textChangeReason = OmnibarTextChangeReason.None;
 		private bool _placeCaretAtEndOnFocus;
+		private double _modeButtonWidth;
 
 		private WeakReference<UIElement?> _previouslyFocusedElement = new(null);
 
@@ -108,9 +109,10 @@ namespace Files.App.Controls
 			foreach (var mode in Modes)
 			{
 				// Insert a divider
+				OmnibarModeSeparator? divider = null;
 				if (_modesHostGrid.Children.Count is not 0)
 				{
-					var divider = new OmnibarModeSeparator();
+					divider = new OmnibarModeSeparator();
 
 					_modesHostGrid.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
 					Grid.SetColumn(divider, _modesHostGrid.Children.Count);
@@ -122,7 +124,41 @@ namespace Files.App.Controls
 				Grid.SetColumn(mode, _modesHostGrid.Children.Count);
 				_modesHostGrid.Children.Add(mode);
 				mode.SetOwner(this);
+
+				// A collapsed mode hides its divider and gives its space back to the text box
+				if (divider is not null)
+					divider.Visibility = mode.Visibility;
+
+				mode.RegisterPropertyChangedCallback(VisibilityProperty, (_, _) => OnModeVisibilityChanged(mode, divider));
 			}
+		}
+
+		private void OnModeVisibilityChanged(OmnibarMode mode, OmnibarModeSeparator? divider)
+		{
+			if (divider is not null)
+				divider.Visibility = mode.Visibility;
+
+			if (mode.Visibility is Visibility.Collapsed && CurrentSelectedMode == mode && Modes is not null)
+				CurrentSelectedMode = Modes.FirstOrDefault(x => x.IsDefault) ?? Modes.FirstOrDefault();
+			else
+				UpdateAutoSuggestBoxPadding();
+		}
+
+		private void UpdateAutoSuggestBoxPadding()
+		{
+			if (Modes is null || _modesHostGrid is null || CurrentSelectedMode is not { } currentMode)
+				return;
+
+			var visibleModes = Modes.Where(x => x.Visibility is Visibility.Visible).ToList();
+			var itemCount = visibleModes.Count;
+			var itemIndex = Math.Max(0, visibleModes.IndexOf(currentMode));
+			var modeSeparatorWidth = _modesHostGrid.Children.OfType<OmnibarModeSeparator>().Select(x => x.ActualWidth).DefaultIfEmpty(0).Max();
+
+			var leftPadding = (itemIndex + 1) * _modeButtonWidth + modeSeparatorWidth * itemIndex;
+			var rightPadding = (itemCount - itemIndex - 1) * _modeButtonWidth + modeSeparatorWidth * (itemCount - itemIndex - 1) + 8;
+
+			// Set the correct AutoSuggestBox cursor position
+			AutoSuggestBoxPadding = new(leftPadding, 0, rightPadding, 0);
 		}
 
 		[DynamicWindowsRuntimeCast(typeof(FrameworkElement))]
@@ -154,16 +190,8 @@ namespace Files.App.Controls
 				_modesHostGrid.ColumnDefinitions[index].Width = new(1, GridUnitType.Star);
 			});
 
-			var itemCount = Modes.Count;
-			var itemIndex = Modes.IndexOf(newMode);
-			var modeButtonWidth = newMode.ActualWidth;
-			var modeSeparatorWidth = itemCount is not (0 or 1) ? _modesHostGrid.Children[1] is FrameworkElement frameworkElement ? frameworkElement.ActualWidth : 0 : 0;
-
-			var leftPadding = (itemIndex + 1) * modeButtonWidth + modeSeparatorWidth * itemIndex;
-			var rightPadding = (itemCount - itemIndex - 1) * modeButtonWidth + modeSeparatorWidth * (itemCount - itemIndex - 1) + 8;
-
-			// Set the correct AutoSuggestBox cursor position
-			AutoSuggestBoxPadding = new(leftPadding, 0, rightPadding, 0);
+			_modeButtonWidth = newMode.ActualWidth;
+			UpdateAutoSuggestBoxPadding();
 
 			_textChangeReason = OmnibarTextChangeReason.ProgrammaticChange;
 			ChangeTextBoxText(newMode.Text ?? string.Empty);

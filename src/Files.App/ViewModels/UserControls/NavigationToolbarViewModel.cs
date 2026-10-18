@@ -248,6 +248,7 @@ namespace Files.App.ViewModels.UserControls
 					value.FolderSettings.PropertyChanged += FolderSettings_PropertyChanged;
 					value.PropertyChanged += InstanceViewModel_PropertyChanged;
 					OnPropertyChanged(nameof(OmnibarSearchModePlaceholder));
+					OnPropertyChanged(nameof(IsOmnibarSearchModeVisible));
 				}
 			}
 		}
@@ -257,6 +258,7 @@ namespace Files.App.ViewModels.UserControls
 			if (e.PropertyName is nameof(CurrentInstanceViewModel.IsPageTypeSettings))
 			{
 				OnPropertyChanged(nameof(OmnibarSearchModePlaceholder));
+				OnPropertyChanged(nameof(IsOmnibarSearchModeVisible));
 
 				// Suggestion source differs between settings and file search — drop stale items.
 				OmnibarSearchModeSuggestionItems.Clear();
@@ -322,6 +324,9 @@ namespace Files.App.ViewModels.UserControls
 					break;
 				case nameof(AppearanceSettingsService.ShowShelfPaneToggleButton):
 					OnPropertyChanged(nameof(ShowShelfPaneToggleButton));
+					break;
+				case nameof(AppearanceSettingsService.ShowOmnibarSearchModeButton):
+					OnPropertyChanged(nameof(IsOmnibarSearchModeVisible));
 					break;
 			}
 		}
@@ -582,6 +587,11 @@ namespace Files.App.ViewModels.UserControls
 			else
 			{
 				normalizedInput = StorageFileExtensions.GetResolvedPath(normalizedInput, isFtp);
+
+				// Fork: text that isn't path-shaped launches a URI or program, opens a child folder, or searches
+				if (!IsPathShapedInput(normalizedInput, isFtp))
+					return await HandleNonPathInputAsync(shellPage, PathText ?? path);
+
 				if (currentPath is not null && currentPath.Equals(normalizedInput, StringComparison.OrdinalIgnoreCase))
 					return true;
 

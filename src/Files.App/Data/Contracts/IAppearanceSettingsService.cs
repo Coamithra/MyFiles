@@ -117,6 +117,11 @@ namespace Files.App.Data.Contracts
 		/// </summary>
 		bool ShowShelfPaneToggleButton { get; set; }
 
+		/// <summary>
+		/// Gets or sets a value whether the address bar shows its search mode button.
+		/// </summary>
+		bool ShowOmnibarSearchModeButton { get; set; }
+
 
 		/// <summary>
 		/// Gets or sets a value indicating when to display the Status Center button.

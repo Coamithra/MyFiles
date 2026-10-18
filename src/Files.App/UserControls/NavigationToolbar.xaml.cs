@@ -186,14 +186,7 @@ namespace Files.App.UserControls
 			// Path mode
 			if (mode == OmnibarPathMode)
 			{
-				var submittedText = args.Text;
-				if (!await viewModel.HandleItemNavigationAsync(submittedText))
-				{
-					RestoreOmnibarText(viewModel, OmnibarPathMode, submittedText);
-					return;
-				}
-
-				ContentPageContext.ShellPage?.PaneHolder?.FocusActivePane();
+				await SubmitPathModeQueryAsync(args.Text);
 				return;
 			}
 
@@ -271,6 +264,63 @@ namespace Files.App.UserControls
 				ContentPageContext.ShellPage?.PaneHolder?.FocusActivePane();
 				return;
 			}
+		}
+
+		/// <summary>
+		/// Submits path-mode text as Enter does. Returns "handled", "rejected", "palette" or "command:&lt;Code&gt;" for automation.
+		/// </summary>
+		internal async Task<string> SubmitPathModeQueryAsync(string submittedText)
+		{
+			if (ViewModel is not { } viewModel)
+				return "rejected";
+
+			// Fork: '?' forces a search and '>' runs a command
+			if (submittedText.StartsWith('?'))
+			{
+				var query = submittedText[1..].Trim();
+				if (query.Length == 0 || ContentPageContext.ShellPage is not { } shellPage)
+				{
+					RestoreOmnibarText(viewModel, OmnibarPathMode, submittedText);
+					return "rejected";
+				}
+
+				viewModel.SubmitOmniboxSearch(shellPage, query);
+				ContentPageContext.ShellPage?.PaneHolder?.FocusActivePane();
+				return "handled";
+			}
+
+			if (submittedText.StartsWith('>'))
+				return await SubmitPathModeCommandAsync(viewModel, submittedText[1..].Trim());
+
+			if (!await viewModel.HandleItemNavigationAsync(submittedText))
+			{
+				RestoreOmnibarText(viewModel, OmnibarPathMode, submittedText);
+				return "rejected";
+			}
+
+			ContentPageContext.ShellPage?.PaneHolder?.FocusActivePane();
+			return "handled";
+		}
+
+		private async Task<string> SubmitPathModeCommandAsync(NavigationToolbarViewModel viewModel, string text)
+		{
+			if (viewModel.FindPathModeCommand(text) is not { } command)
+			{
+				RestoreOmnibarText(viewModel, OmnibarCommandPaletteMode, text);
+				return "palette";
+			}
+
+			if (!command.IsExecutable)
+			{
+				await DialogDisplayHelper.ShowDialogAsync(Strings.CommandNotExecutable.GetLocalizedResource(),
+					string.Format(Strings.CommandNotExecutableContent.GetLocalizedResource(), command.Code));
+				RestoreOmnibarText(viewModel, OmnibarPathMode, ">" + text);
+				return "rejected";
+			}
+
+			await command.ExecuteAsync();
+			ContentPageContext.ShellPage?.PaneHolder?.FocusActivePane();
+			return $"command:{command.Code}";
 		}
 
 		private async void Omnibar_TextChanged(Omnibar sender, OmnibarTextChangedEventArgs args)
