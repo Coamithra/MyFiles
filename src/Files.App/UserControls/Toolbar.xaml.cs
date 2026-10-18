@@ -501,7 +501,7 @@ namespace Files.App.UserControls
 					flyout.Items.Add(CreateGroupMenuItem(cmd));
 
 			if (group is NewItemCommandGroup && ViewModel?.InstanceViewModel.CanCreateFileInPage == true
-				&& addItemService.GetEntries() is { Count: > 0 } entries)
+				&& addItemService.GetVisibleEntries() is { Count: > 0 } entries)
 			{
 				flyout.Items.Add(new MenuFlyoutSeparator());
 				var fmt = $"D{entries.Count.ToString().Length}";
