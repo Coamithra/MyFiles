@@ -1788,6 +1788,9 @@
   <data name="SideBarHideSectionFromSideBarText" xml:space="preserve">
     <value>Hide {0} section</value>
   </data>
+  <data name="HideFromSidebar" xml:space="preserve">
+    <value>Hide from sidebar</value>
+  </data>
   <data name="AddFile" xml:space="preserve">
     <value>Add file</value>
   </data>
@@ -1931,6 +1934,15 @@
   </data>
   <data name="Sidebar" xml:space="preserve">
     <value>Sidebar</value>
+  </data>
+  <data name="SidebarSections" xml:space="preserve">
+    <value>Sidebar sections</value>
+  </data>
+  <data name="SidebarCloudDriveVisibility" xml:space="preserve">
+    <value>Cloud drives in the sidebar</value>
+  </data>
+  <data name="SidebarCloudDriveVisibilityDescription" xml:space="preserve">
+    <value>Uncheck a cloud drive to hide it from the sidebar.</value>
   </data>
   <data name="ChooseCustomIcon" xml:space="preserve">
     <value>Choose a custom folder icon</value>

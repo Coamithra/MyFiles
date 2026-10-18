@@ -215,6 +215,18 @@ namespace Files.App.Services.Settings
 			set => Set(value);
 		}
 
+		public bool ShowHomeSection
+		{
+			get => Get(true);
+			set => Set(value);
+		}
+
+		public List<string>? HiddenSidebarCloudDrives
+		{
+			get => Get<List<string>>(null);
+			set => Set(value);
+		}
+
 		public bool IsPinnedSectionExpanded
 		{
 			get => Get(true);

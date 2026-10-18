@@ -29,7 +29,7 @@ namespace Files.App.Automation
 			("newMenu", "Entries of the New submenu that come from the shell (ShellNew); hidden marks the ones hidden in Settings."),
 			("terminal.preview", "What an Open in terminal command would launch for the active pane's selection (or its folder when nothing is selected), without launching. Params: code (OpenTerminal (default), OpenTerminalAsAdmin, OpenTerminalFromSidebar, OpenTerminalFromHome)."),
 			("layoutMenu", "Entries of the toolbar's Layout menu as the flyout binds them: hidden = hidden in Settings, shown = visible now (Adaptive also needs to be applicable); which sections and dividers show; button = whether the Layout button shows at all; activeLayout."),
-			("sidebar", "Sidebar sections and their items."),
+			("sidebar", "Sidebar sections and their items; selected marks the item the sidebar highlights."),
 			("bookmarks", "The Bookmarks tree with ids."),
 			("bookmarks.add", "Bookmark a folder. Params: path, name (optional), parent (group id; top level when omitted), index (default end)."),
 			("bookmarks.addGroup", "Add a bookmark group. Params: name, parent, index."),
@@ -391,15 +391,17 @@ namespace Files.App.Automation
 		private static JsonNode Sidebar()
 		{
 			var sidebar = Ioc.Default.GetRequiredService<SidebarViewModel>();
+			var selected = sidebar.SidebarSelectedItem;
 			return SidebarTree(sidebar.SidebarItems as IEnumerable<INavigationControlItem> ?? []);
 
-			static JsonArray SidebarTree(IEnumerable<INavigationControlItem> items)
+			JsonArray SidebarTree(IEnumerable<INavigationControlItem> items)
 				=> new([.. items.ToList().Select(item => (JsonNode)new JsonObject
 				{
 					["text"] = item.Text,
 					["path"] = item.Path,
 					["section"] = item.Section.ToString(),
 					["type"] = item.ItemType.ToString(),
+					["selected"] = ReferenceEquals(item, selected),
 					["items"] = item.Children is IEnumerable<INavigationControlItem> children ? SidebarTree(children) : null,
 				})]);
 		}
