@@ -152,6 +152,9 @@ namespace Files.App.UserControls.TabBar
 			if (tabItem is null)
 				return;
 
+			// Unloading disposes the panes that hold the history
+			var closedTab = PaneHistoryHelper.CaptureTab(tabItem);
+
 			if (MainWindow.Instance.Content is Frame rootFrame && rootFrame.Content is Files.App.Views.MainPage mainPage)
 				mainPage.DetachTabContent(tabItem);
 
@@ -159,7 +162,7 @@ namespace Files.App.UserControls.TabBar
 			tabItem.Unload();
 
 			// Dispose and save tab arguments
-			PushRecentTab([tabItem.NavigationParameter!]);
+			PushRecentTab([closedTab!]);
 
 			// Save the updated tab list
 			AppLifecycleHelper.SaveSessionTabs();

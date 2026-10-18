@@ -27,12 +27,18 @@ namespace Files.App.Views.Shells
 				if (value != _NavParams)
 				{
 					_NavParams = value;
+					PendingHistory = value?.History;
 
 					if (IsLoaded)
 						OnNavigationParamsChanged();
 				}
 			}
 		}
+
+		/// <summary>
+		/// Restored back/forward history waiting for this pane's next navigation.
+		/// </summary>
+		internal PaneHistory? PendingHistory { get; private set; }
 
 		public ModernShellPage() : base(new CurrentInstanceViewModel())
 		{
@@ -157,6 +163,16 @@ namespace Files.App.Views.Shells
 
 		private async void ItemDisplayFrame_Navigated(object sender, NavigationEventArgs e)
 		{
+			if (PendingHistory is { } history)
+			{
+				PendingHistory = null;
+				PaneHistoryHelper.Apply(ItemDisplayFrame, history, this, InstanceViewModel.FolderSettings);
+
+				// Home never reports item loading, which is where the toolbar normally learns these
+				ToolbarViewModel.CanGoBack = ItemDisplayFrame.CanGoBack;
+				ToolbarViewModel.CanGoForward = ItemDisplayFrame.CanGoForward;
+			}
+
 			ContentPage = await GetContentOrNullAsync();
 
 			ToolbarViewModel.UpdateAdditionalActions();

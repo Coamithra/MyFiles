@@ -31,6 +31,8 @@ namespace Files.App.Automation
 			("tabs.open", "Open a tab. Params: path (optional; Home when omitted)."),
 			("tabs.select", "Select a tab. Params: index."),
 			("tabs.close", "Close a tab. Params: index. Closing the last tab closes the window."),
+			("history", "Back/forward stacks of every pane, in frame stack order (last back entry = where Back goes). Params: index (tab; all when omitted). pending = restored history not applied yet because the pane has not navigated."),
+			("session.endSession", "Run the sign-out handler as if Windows sent WM_QUERYENDSESSION, even in a hidden instance. Returns the restart registration outcome; the registration is undone right after (a dry run)."),
 			("settings.get", "Stored user settings, including session keys. Params: keys (array; all when omitted). Never-changed settings are absent (null)."),
 			("settings.set", "Change user settings as their setters would. Params: values (object of key to value). Returns which changed."),
 			("window.show", "Uncloak and activate the window, for debugging the UI."),
@@ -62,6 +64,8 @@ namespace Files.App.Automation
 				"tabs.open" => OpenTabAsync(p),
 				"tabs.select" => Done(SelectTab(p)),
 				"tabs.close" => Done(CloseTab(p)),
+				"history" => Done(History(p)),
+				"session.endSession" => Done(EndSession()),
 				"settings.get" => Done(GetSettings(p)),
 				"settings.set" => Done(SetSettings(p)),
 				"window.show" => Done(ShowWindow(true)),
@@ -414,6 +418,44 @@ namespace Files.App.Automation
 
 			control.CloseTab(tab);
 			return State();
+		}
+
+		private static JsonNode History(JsonObject p)
+		{
+			var tabs = new JsonArray();
+			for (var i = 0; i < MainPageViewModel.AppInstances.Count; i++)
+			{
+				if (p["index"] is not null && TabAt(p).Index != i)
+					continue;
+
+				var panes = new JsonArray();
+				if (MainPageViewModel.AppInstances[i].TabItemContent is IShellPanesPage panesPage)
+				{
+					foreach (var pane in panesPage.GetPanes())
+					{
+						var (history, isPending) = PaneHistoryHelper.Snapshot(pane);
+						panes.Add((JsonNode)new JsonObject
+						{
+							["path"] = pane.TabBarItemParameter?.NavigationParameter as string ?? pane.NavParams?.NavPath,
+							["pending"] = isPending,
+							["back"] = new JsonArray([.. (history?.Back ?? []).Select(path => (JsonNode?)path)]),
+							["forward"] = new JsonArray([.. (history?.Forward ?? []).Select(path => (JsonNode?)path)]),
+						});
+					}
+				}
+
+				tabs.Add((JsonNode)new JsonObject { ["index"] = i, ["panes"] = panes });
+			}
+
+			return tabs;
+		}
+
+		private static JsonNode EndSession()
+		{
+			SessionEndHelper.OnQueryEndSession(ignoreHidden: true);
+			var outcome = SessionEndHelper.RestartRegistration;
+			SessionEndHelper.ResetRestartRegistration();
+			return new JsonObject { ["restartRegistration"] = outcome };
 		}
 
 		private static JsonNode GetSettings(JsonObject p)
