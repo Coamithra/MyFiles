@@ -159,6 +159,9 @@ namespace Files.App
 
 				if (!isStartupTask || !isLeaveAppRunning)
 				{
+					// Which saved window this is decides its placement, applied when the window is first shown
+					WindowSessionManager.EnsureInitialized(appActivationArguments.Data);
+
 					if (showSplashScreen)
 					{
 						SplashScreenLoadingTCS = new TaskCompletionSource();
@@ -309,6 +312,9 @@ namespace Files.App
 				AppLifecycleHelper.SaveSessionTabs();
 			else
 				await commandManager.CloseAllTabs.ExecuteAsync();
+
+			// Closing one of several windows forgets it; the last window keeps its session
+			WindowSessionManager.OnWindowClosed();
 
 			if (OutputPath is not null)
 			{
