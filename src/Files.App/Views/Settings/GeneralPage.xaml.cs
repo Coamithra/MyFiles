@@ -11,9 +11,15 @@ namespace Files.App.Views.Settings
 	{
 		public ContextMenuDeclutterViewModel ContextMenuDeclutter { get; } = new();
 
+		public TerminalSettingsViewModel Terminal { get; } = new();
+
+		public SidebarDeclutterViewModel SidebarDeclutter { get; } = new();
+
 		public GeneralPage()
 		{
 			InitializeComponent();
+			Loaded += (_, _) => SidebarDeclutter.Attach();
+			Unloaded += (_, _) => SidebarDeclutter.Detach();
 		}
 
 		private void RemoveStartupPage(object sender, RoutedEventArgs e)

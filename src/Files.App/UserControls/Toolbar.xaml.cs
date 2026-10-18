@@ -25,6 +25,7 @@ namespace Files.App.UserControls
 		private readonly IAddItemService addItemService = Ioc.Default.GetRequiredService<IAddItemService>();
 		private readonly DispatcherQueueTimer toolbarRefreshTimer;
 		private readonly IContentPageContext PageContext = Ioc.Default.GetRequiredService<IContentPageContext>();
+		private readonly LayoutMenuVisibility LayoutMenu = LayoutMenuVisibility.Instance;
 		private UserControls.Menus.FileTagsContextMenu? editTagsMenu;
 		private OpenWithMenu? openWithMenu;
 		private int openWithFlyoutRequestId;

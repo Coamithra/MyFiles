@@ -176,6 +176,16 @@ namespace Files.App.Data.Contracts
 		bool ShowBookmarksSection { get; set; }
 
 		/// <summary>
+		/// Gets or sets a value indicating if the home item should be visible in the sidebar.
+		/// </summary>
+		bool ShowHomeSection { get; set; }
+
+		/// <summary>
+		/// Gets or sets the sync folder paths of the cloud drives hidden from the sidebar.
+		/// </summary>
+		List<string>? HiddenSidebarCloudDrives { get; set; }
+
+		/// <summary>
 		/// Gets or sets a value indicating if the pinned section should be expanded.
 		/// </summary>
 		bool IsPinnedSectionExpanded { get; set; }
@@ -269,6 +279,21 @@ namespace Files.App.Data.Contracts
 		/// Gets or sets a value indicating whether or not to show the option to open folders in Windows Terminal.
 		/// </summary>
 		bool ShowOpenTerminal { get; set; }
+
+		/// <summary>
+		/// Gets or sets the terminal the Open in terminal commands launch.
+		/// </summary>
+		TerminalType TerminalType { get; set; }
+
+		/// <summary>
+		/// Gets or sets the executable path or alias launched when <see cref="TerminalType"/> is <see cref="TerminalType.Custom"/>.
+		/// </summary>
+		string CustomTerminalPath { get; set; }
+
+		/// <summary>
+		/// Gets or sets the arguments for the custom terminal; {path} is replaced with the folder's path.
+		/// </summary>
+		string CustomTerminalArguments { get; set; }
 
 		/// <summary>
 		/// Gets or sets a value indicating whether or not to show the option to copy an items path.
