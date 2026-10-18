@@ -134,6 +134,11 @@ CLSIDFromString
 FindWindow
 FindWindowEx
 SendMessage
+SendMessageTimeout
+PeekMessage
+DispatchMessage
+MsgWaitForMultipleObjects
+HWND_MESSAGE
 IsWindowVisible
 COPYDATASTRUCT
 WINDOW_LONG_PTR_INDEX

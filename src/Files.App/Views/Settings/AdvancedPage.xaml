@@ -113,6 +113,14 @@
 				<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=ShowSystemTrayIcon}" IsOn="{x:Bind ViewModel.ShowSystemTrayIcon, Mode=TwoWay}" />
 			</wctcontrols:SettingsCard>
 
+			<!--  Everything Search  -->
+			<wctcontrols:SettingsCard Description="{helpers:ResourceString Name=UseEverythingForSearchDescription}" Header="{helpers:ResourceString Name=UseEverythingForSearch}">
+				<wctcontrols:SettingsCard.HeaderIcon>
+					<FontIcon Glyph="&#xE721;" />
+				</wctcontrols:SettingsCard.HeaderIcon>
+				<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=UseEverythingForSearch}" IsOn="{x:Bind ViewModel.UseEverythingForSearch, Mode=TwoWay}" />
+			</wctcontrols:SettingsCard>
+
 			<!--  Experimental Settings  -->
 			<TextBlock
 				Padding="0,16,0,4"

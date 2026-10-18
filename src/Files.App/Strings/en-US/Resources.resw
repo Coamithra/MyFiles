@@ -4353,6 +4353,12 @@
   <data name="ShowSystemTrayIcon" xml:space="preserve">
     <value>Show Files icon in the System Tray</value>
   </data>
+  <data name="UseEverythingForSearch" xml:space="preserve">
+    <value>Search with Everything</value>
+  </data>
+  <data name="UseEverythingForSearchDescription" xml:space="preserve">
+    <value>Use voidtools Everything for search when it's running. Folders Everything doesn't index, tag searches and queries starting with $ still use Windows Search.</value>
+  </data>
   <data name="CPUThreads" xml:space="preserve">
     <value>CPU threads</value>
   </data>
