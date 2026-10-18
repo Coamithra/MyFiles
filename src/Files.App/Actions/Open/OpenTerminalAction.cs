@@ -24,6 +24,9 @@ namespace Files.App.Actions
 			new([0x1F, 0x3F, 0x63, 0x86, 0x54, 0x64, 0xEC, 0x40, 0x89, 0xCE, 0xDA, 0x4E, 0xBA, 0x97, 0x7E, 0xE2]), // Windows Terminal Preview
 		];
 
+		// The default-terminal probe can start a COM server, so labels reuse the last answer; launches probe afresh
+		private static bool? cachedIsWindowsTerminalDefault;
+
 		public virtual string Label
 			=> TerminalLauncher.GetLabel(GetEffectiveTerminalType(), IsAdmin);
 
@@ -87,18 +90,18 @@ namespace Files.App.Actions
 			=> GetProcessStartInfos(GetPaths());
 
 		/// <summary>
-		/// The terminal setting with Windows default resolved, and a Custom terminal without an executable treated as Command Prompt.
+		/// The terminal setting with Windows default resolved (from the cached probe unless <paramref name="probe"/> is set), and a Custom terminal without an executable treated as Command Prompt.
 		/// </summary>
-		internal TerminalType GetEffectiveTerminalType()
+		internal TerminalType GetEffectiveTerminalType(bool probe = false)
 			=> generalSettings.TerminalType switch
 			{
-				TerminalType.WindowsDefault => IsWindowsTerminalDefault() ? TerminalType.WindowsTerminal : TerminalType.CommandPrompt,
+				TerminalType.WindowsDefault => (probe || cachedIsWindowsTerminalDefault is null ? (cachedIsWindowsTerminalDefault = IsWindowsTerminalDefault()).Value : cachedIsWindowsTerminalDefault.Value) ? TerminalType.WindowsTerminal : TerminalType.CommandPrompt,
 				TerminalType.Custom when string.IsNullOrWhiteSpace(generalSettings.CustomTerminalPath) => TerminalType.CommandPrompt,
 				var type => type,
 			};
 
 		protected virtual List<ProcessStartInfo> GetProcessStartInfos(string[] paths)
-			=> TerminalLauncher.Build(GetEffectiveTerminalType(), generalSettings.CustomTerminalPath, generalSettings.CustomTerminalArguments, paths);
+			=> TerminalLauncher.Build(GetEffectiveTerminalType(probe: true),generalSettings.CustomTerminalPath, generalSettings.CustomTerminalArguments, paths);
 
 		private static unsafe bool IsWindowsTerminalDefault()
 		{
