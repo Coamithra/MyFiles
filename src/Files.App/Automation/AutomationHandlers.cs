@@ -12,7 +12,7 @@ namespace Files.App.Automation
 	/// <summary>
 	/// The methods <see cref="AutomationServer"/> exposes. All run on the UI thread.
 	/// </summary>
-	internal static class AutomationHandlers
+	internal static partial class AutomationHandlers
 	{
 		private static readonly (string Name, string Help)[] Methods =
 		[
@@ -27,6 +27,12 @@ namespace Files.App.Automation
 			("contextMenu", "Files' own and shell entries of the right-click menu. Params: names (items; omit for the background menu), shell (default true)."),
 			("newMenu", "Entries of the New submenu that come from the shell (ShellNew)."),
 			("sidebar", "Sidebar sections and their items."),
+			("bookmarks", "The Bookmarks tree with ids."),
+			("bookmarks.add", "Bookmark a folder. Params: path, name (optional), parent (group id; top level when omitted), index (default end)."),
+			("bookmarks.addGroup", "Add a bookmark group. Params: name, parent, index."),
+			("bookmarks.rename", "Rename a bookmark or group. Params: id, name (empty resets a bookmark to its folder's name)."),
+			("bookmarks.move", "Move a bookmark or group as a sidebar drop would. Params: id, target (id; the section header when omitted), position (before, after or into; default into)."),
+			("bookmarks.remove", "Remove a bookmark, or a group with everything in it. Params: id."),
 			("tabs.open", "Open a tab. Params: path (optional; Home when omitted)."),
 			("tabs.select", "Select a tab. Params: index."),
 			("tabs.close", "Close a tab. Params: index. Closing the last tab closes the window."),
@@ -58,6 +64,12 @@ namespace Files.App.Automation
 				"contextMenu" => ContextMenuAsync(p),
 				"newMenu" => Done(NewMenu()),
 				"sidebar" => Done(Sidebar()),
+				"bookmarks" => Done(Bookmarks()),
+				"bookmarks.add" => Done(AddBookmark(p)),
+				"bookmarks.addGroup" => Done(AddBookmarkGroup(p)),
+				"bookmarks.rename" => Done(RenameBookmark(p)),
+				"bookmarks.move" => Done(MoveBookmark(p)),
+				"bookmarks.remove" => Done(RemoveBookmark(p)),
 				"tabs.open" => OpenTabAsync(p),
 				"tabs.select" => Done(SelectTab(p)),
 				"tabs.close" => Done(CloseTab(p)),

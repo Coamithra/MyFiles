@@ -171,6 +171,11 @@ namespace Files.App.Data.Contracts
 		bool ShowFileTagsSection { get; set; }
 
 		/// <summary>
+		/// Gets or sets a value indicating if the bookmarks section should be visible.
+		/// </summary>
+		bool ShowBookmarksSection { get; set; }
+
+		/// <summary>
 		/// Gets or sets a value indicating if the pinned section should be expanded.
 		/// </summary>
 		bool IsPinnedSectionExpanded { get; set; }
@@ -204,6 +209,11 @@ namespace Files.App.Data.Contracts
 		/// Gets or sets a value indicating if the file tags section should be expanded.
 		/// </summary>
 		bool IsFileTagsSectionExpanded { get; set; }
+
+		/// <summary>
+		/// Gets or sets a value indicating if the bookmarks section should be expanded.
+		/// </summary>
+		bool IsBookmarksSectionExpanded { get; set; }
 
 		/// <summary>
 		/// Gets or sets a value indicating whether or not to move shell extensions into a sub menu.

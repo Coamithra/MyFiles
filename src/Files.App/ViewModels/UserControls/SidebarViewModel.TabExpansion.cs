@@ -37,6 +37,8 @@ namespace Files.App.ViewModels.UserControls
 				yield return SectionKeyByEnum[(int)SectionType.WSL];
 			if (general.IsFileTagsSectionExpanded)
 				yield return SectionKeyByEnum[(int)SectionType.FileTag];
+			if (general.IsBookmarksSectionExpanded)
+				yield return SectionKeyByEnum[(int)SectionType.Bookmarks];
 		}
 
 		private void PersistSectionExpansion(SectionType section, bool isExpanded)
@@ -64,6 +66,9 @@ namespace Files.App.ViewModels.UserControls
 					break;
 				case SectionType.FileTag:
 					general.IsFileTagsSectionExpanded = isExpanded;
+					break;
+				case SectionType.Bookmarks:
+					general.IsBookmarksSectionExpanded = isExpanded;
 					break;
 			}
 		}
@@ -300,6 +305,9 @@ namespace Files.App.ViewModels.UserControls
 
 		private void ApplyStateToItem(INavigationControlItem item, HashSet<string> state)
 		{
+			// Bookmark groups keep the expansion stored in the bookmarks tree, the same in every tab.
+			if (item is BookmarkGroupItem)
+				return;
 			var key = GetExpansionKey(item);
 			var shouldExpand = key is not null && state.Contains(key);
 			item.IsExpanded = shouldExpand;

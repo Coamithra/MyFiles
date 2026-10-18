@@ -79,6 +79,7 @@ namespace Files.App.ViewModels.UserControls
 			[
 				SectionType.Home,
 				SectionType.Pinned,
+				SectionType.Bookmarks,
 				SectionType.Library,
 				SectionType.Drives,
 				SectionType.CloudDrives,
@@ -144,6 +145,13 @@ namespace Files.App.ViewModels.UserControls
 		{
 			foreach (var item in items)
 			{
+				// Path-less containers (bookmark groups) don't prefix their children's paths; look through them.
+				if (string.IsNullOrEmpty(item.Path))
+				{
+					if (item.IsExpanded && GetChildren(item) is { } groupChildren)
+						FindDeepestVisibleAncestorRecursive(groupChildren, targetPath, ref best);
+					continue;
+				}
 				if (!PathIsAncestorOrMatch(item.Path, targetPath))
 					continue;
 				ConsiderAsBest(item, ref best);
@@ -191,6 +199,7 @@ namespace Files.App.ViewModels.UserControls
 
 		public bool AreSectionsHidden =>
 			!ShowPinnedFoldersSection &&
+			!ShowBookmarksSection &&
 			!ShowLibrarySection &&
 			!ShowDrivesSection &&
 			!ShowCloudDrivesSection &&
@@ -324,6 +333,7 @@ namespace Files.App.ViewModels.UserControls
 			NetworkService.Computers.CollectionChanged += Manager_DataChangedForNetworkComputers;
 			WSLDistroManager.DataChanged += Manager_DataChanged;
 			App.FileTagsManager.DataChanged += Manager_DataChanged;
+			InitializeBookmarks();
 			uiSettings.ColorValuesChanged += UiSettings_ColorValuesChanged;
 			SidebarDisplayMode = UserSettingsService.AppearanceSettingsService.IsSidebarOpen ? SidebarDisplayMode.Expanded : SidebarDisplayMode.Compact;
 
@@ -566,6 +576,12 @@ namespace Files.App.ViewModels.UserControls
 					section.IsHeader = true;
 					break;
 
+				case SectionType.Bookmarks:
+					if (!ShowBookmarksSection)
+						break;
+					section = BuildBookmarksSection();
+					break;
+
 				case SectionType.Library:
 					if (ShowLibrarySection == false)
 						break;
@@ -712,6 +728,11 @@ namespace Files.App.ViewModels.UserControls
 					OnPropertyChanged(nameof(ShowFileTagsSection));
 					OnPropertyChanged(nameof(AreSectionsHidden));
 					break;
+				case nameof(UserSettingsService.GeneralSettingsService.ShowBookmarksSection):
+					await SyncBookmarksSectionAsync();
+					OnPropertyChanged(nameof(ShowBookmarksSection));
+					OnPropertyChanged(nameof(AreSectionsHidden));
+					break;
 				case nameof(UserSettingsService.FoldersSettingsService.ShowHiddenItems):
 					await ReloadFilteredSubfoldersAsync();
 					break;
@@ -754,6 +775,7 @@ namespace Files.App.ViewModels.UserControls
 			NetworkService.Computers.CollectionChanged -= Manager_DataChangedForNetworkComputers;
 			WSLDistroManager.DataChanged -= Manager_DataChanged;
 			App.FileTagsManager.DataChanged -= Manager_DataChanged;
+			DisposeBookmarks();
 			uiSettings.ColorValuesChanged -= UiSettings_ColorValuesChanged;
 
 			TeardownTabExpansionTracking();
@@ -951,6 +973,9 @@ namespace Files.App.ViewModels.UserControls
 			{
 				case SectionType.Pinned:
 					UserSettingsService.GeneralSettingsService.ShowPinnedSection = false;
+					break;
+				case SectionType.Bookmarks:
+					UserSettingsService.GeneralSettingsService.ShowBookmarksSection = false;
 					break;
 				case SectionType.Library:
 					UserSettingsService.GeneralSettingsService.ShowLibrarySection = false;
@@ -1150,6 +1175,22 @@ namespace Files.App.ViewModels.UserControls
 					Command = UnpinItemCommand,
 					ShowItem = options.ShowUnpinItem || isDriveItemPinned
 				},
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.AddBookmarkFromSidebar)
+				{
+					IsVisible = ShowBookmarksSection && Commands.AddBookmarkFromSidebar.IsExecutable
+				}.Build(),
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.NewBookmarkGroup)
+				{
+					IsVisible = Commands.NewBookmarkGroup.IsExecutable
+				}.Build(),
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.RenameBookmark)
+				{
+					IsVisible = Commands.RenameBookmark.IsExecutable
+				}.Build(),
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.RemoveBookmark)
+				{
+					IsVisible = Commands.RemoveBookmark.IsExecutable
+				}.Build(),
 				new ContextMenuFlyoutItemViewModel()
 				{
 					Text = Strings.ReorderSidebarItemsDialogText.GetLocalizedResource(),
@@ -1212,6 +1253,9 @@ namespace Files.App.ViewModels.UserControls
 
 		public async Task HandleItemDragOverAsync(ItemDragOverEventArgs args)
 		{
+			if (await TryHandleBookmarkDragOverAsync(args))
+				return;
+
 			if (args.DropTarget is LocationItem locationItem)
 				await HandleLocationItemDragOverAsync(locationItem, args);
 			else if (args.DropTarget is DriveItem driveItem)
@@ -1385,6 +1429,9 @@ namespace Files.App.ViewModels.UserControls
 
 		public async Task HandleItemDroppedAsync(ItemDroppedEventArgs args)
 		{
+			if (await TryHandleBookmarkDropAsync(args))
+				return;
+
 			if (args.DropTarget is LocationItem locationItem)
 				await HandleLocationItemDroppedAsync(locationItem, args);
 			else if (args.DropTarget is DriveItem driveItem)

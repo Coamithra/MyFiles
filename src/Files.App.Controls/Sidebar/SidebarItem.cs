@@ -135,7 +135,7 @@ namespace Files.App.Controls
 			UpdateFlyoutChildrenSource();
 			UpdateExpansionState();
 			ReevaluateSelection();
-			CanDrag = Item?.Path is string path && Path.IsPathRooted(path);
+			CanDrag = (Item?.Path is string path && Path.IsPathRooted(path)) || Item is ISidebarReorderableItem;
 		}
 
 		private void UpdateItemPresentation()
@@ -256,6 +256,12 @@ namespace Files.App.Controls
 
 		private void SidebarItem_DragStarting(UIElement sender, DragStartingEventArgs args)
 		{
+			if (Item is ISidebarReorderableItem reorderable)
+			{
+				args.Data.SetData(SidebarReorderData.Format, reorderable.ReorderId);
+				args.Data.RequestedOperation = DataPackageOperation.Move;
+			}
+
 			if (Item?.Path is not string dragPath || !Path.IsPathRooted(dragPath))
 				return;
 
@@ -627,7 +633,7 @@ namespace Files.App.Controls
 		[DynamicWindowsRuntimeCast(typeof(Grid))]
 		private SidebarItemDropPosition DetermineDropTargetPosition(DragEventArgs args)
 		{
-			if (UseReorderDrop)
+			if (UseReorderDrop || Item is ISidebarReorderableItem)
 			{
 				if (GetTemplateChild("ElementGrid") is Grid grid)
 				{
