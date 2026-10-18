@@ -273,7 +273,8 @@
 				Label="{helpers:ResourceString Name=Layout}"
 				LabelPosition="Collapsed"
 				Style="{StaticResource ToolBarAppBarButtonFlyoutStyle}"
-				ToolTipService.ToolTip="{helpers:ResourceString Name=Layout}">
+				ToolTipService.ToolTip="{helpers:ResourceString Name=Layout}"
+				Visibility="{x:Bind LayoutMenu.IsAnyEntryShown, Mode=OneWay}">
 
 				<controls:ThemedIcon Style="{x:Bind ViewModel.LayoutThemedIcon, Mode=OneWay}" />
 
@@ -285,10 +286,16 @@
 						<StackPanel Spacing="12">
 
 							<!--  Header  -->
-							<TextBlock FontWeight="Medium" Text="{helpers:ResourceString Name=Layout}" />
+							<TextBlock
+								FontWeight="Medium"
+								Text="{helpers:ResourceString Name=Layout}"
+								Visibility="{x:Bind LayoutMenu.ShowLayoutSection, Mode=OneWay}" />
 
 							<!--  Layout  -->
-							<StackPanel Orientation="Horizontal" Spacing="8">
+							<StackPanel
+								Orientation="Horizontal"
+								Spacing="8"
+								Visibility="{x:Bind LayoutMenu.ShowLayoutSection, Mode=OneWay}">
 
 								<!--  Details  -->
 								<RadioButton
@@ -298,7 +305,8 @@
 									GroupName="LayoutRadio"
 									IsChecked="{x:Bind ViewModel.IsDetailsLayout, Mode=OneWay}"
 									Style="{StaticResource Local.RadioToggleButtonStyle}"
-									ToolTipService.ToolTip="{x:Bind Commands.LayoutDetails.LabelWithHotKey, Mode=OneWay}">
+									ToolTipService.ToolTip="{x:Bind Commands.LayoutDetails.LabelWithHotKey, Mode=OneWay}"
+									Visibility="{x:Bind LayoutMenu.ShowDetails, Mode=OneWay}">
 									<StackPanel Spacing="4">
 										<controls:ThemedIcon
 											Width="28"
@@ -322,7 +330,8 @@
 									GroupName="LayoutRadio"
 									IsChecked="{x:Bind ViewModel.IsListLayout, Mode=OneWay}"
 									Style="{StaticResource Local.RadioToggleButtonStyle}"
-									ToolTipService.ToolTip="{x:Bind Commands.LayoutList.LabelWithHotKey, Mode=OneWay}">
+									ToolTipService.ToolTip="{x:Bind Commands.LayoutList.LabelWithHotKey, Mode=OneWay}"
+									Visibility="{x:Bind LayoutMenu.ShowList, Mode=OneWay}">
 
 									<StackPanel Spacing="4">
 										<controls:ThemedIcon
@@ -347,7 +356,8 @@
 									GroupName="LayoutRadio"
 									IsChecked="{x:Bind ViewModel.IsCardsLayout, Mode=OneWay}"
 									Style="{StaticResource Local.RadioToggleButtonStyle}"
-									ToolTipService.ToolTip="{x:Bind Commands.LayoutCards.LabelWithHotKey, Mode=OneWay}">
+									ToolTipService.ToolTip="{x:Bind Commands.LayoutCards.LabelWithHotKey, Mode=OneWay}"
+									Visibility="{x:Bind LayoutMenu.ShowCards, Mode=OneWay}">
 
 									<StackPanel Spacing="4">
 										<controls:ThemedIcon
@@ -372,7 +382,8 @@
 									GroupName="LayoutRadio"
 									IsChecked="{x:Bind ViewModel.IsGridLayout, Mode=OneWay}"
 									Style="{StaticResource Local.RadioToggleButtonStyle}"
-									ToolTipService.ToolTip="{x:Bind Commands.LayoutGrid.LabelWithHotKey, Mode=OneWay}">
+									ToolTipService.ToolTip="{x:Bind Commands.LayoutGrid.LabelWithHotKey, Mode=OneWay}"
+									Visibility="{x:Bind LayoutMenu.ShowGrid, Mode=OneWay}">
 
 									<StackPanel Spacing="4">
 										<controls:ThemedIcon
@@ -397,7 +408,8 @@
 									GroupName="LayoutRadio"
 									IsChecked="{x:Bind ViewModel.IsColumnLayout, Mode=OneWay}"
 									Style="{StaticResource Local.RadioToggleButtonStyle}"
-									ToolTipService.ToolTip="{x:Bind Commands.LayoutColumns.LabelWithHotKey, Mode=OneWay}">
+									ToolTipService.ToolTip="{x:Bind Commands.LayoutColumns.LabelWithHotKey, Mode=OneWay}"
+									Visibility="{x:Bind LayoutMenu.ShowColumns, Mode=OneWay}">
 
 									<StackPanel Spacing="4">
 										<controls:ThemedIcon
@@ -420,11 +432,15 @@
 								Margin="-20,0"
 								HorizontalAlignment="Stretch"
 								BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-								BorderThickness=".5" />
+								BorderThickness=".5"
+								Visibility="{x:Bind LayoutMenu.ShowSizeDivider, Mode=OneWay}" />
 
 							<!--  Sizes  -->
-							<TextBlock FontWeight="Medium" Text="{helpers:ResourceString Name=Size}" />
-							<Grid>
+							<TextBlock
+								FontWeight="Medium"
+								Text="{helpers:ResourceString Name=Size}"
+								Visibility="{x:Bind LayoutMenu.ShowSizeSection, Mode=OneWay}" />
+							<Grid Visibility="{x:Bind LayoutMenu.ShowSizeSection, Mode=OneWay}">
 
 								<!--  Details  -->
 								<StackPanel
@@ -763,77 +779,84 @@
 								Margin="-20,0"
 								HorizontalAlignment="Stretch"
 								BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-								BorderThickness=".5" />
+								BorderThickness=".5"
+								Visibility="{x:Bind LayoutMenu.ShowTogglesDivider, Mode=OneWay}" />
 
 							<!--  Toggle Options  -->
-							<Grid RowSpacing="4">
-								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="*" />
-									<ColumnDefinition Width="Auto" />
-								</Grid.ColumnDefinitions>
-								<Grid.RowDefinitions>
-									<RowDefinition Height="Auto" />
-									<RowDefinition Height="Auto" />
-									<RowDefinition Height="Auto" />
-								</Grid.RowDefinitions>
+							<StackPanel Spacing="4" Visibility="{x:Bind LayoutMenu.ShowTogglesSection, Mode=OneWay}">
 
 								<!--  Show Hidden Files  -->
-								<TextBlock
-									Grid.Row="0"
-									Grid.Column="0"
-									VerticalAlignment="Center"
-									Text="{x:Bind Commands.ToggleShowHiddenItems.Label}" />
+								<Grid Visibility="{x:Bind LayoutMenu.ShowHiddenItemsToggle, Mode=OneWay}">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="*" />
+										<ColumnDefinition Width="Auto" />
+									</Grid.ColumnDefinitions>
 
-								<ToggleSwitch
-									Grid.Row="0"
-									Grid.Column="1"
-									MinWidth="68"
-									HorizontalAlignment="Right"
-									AccessKey="H"
-									AutomationProperties.Name="{x:Bind Commands.ToggleShowHiddenItems.AutomationName}"
-									IsOn="{x:Bind Commands.ToggleShowHiddenItems.IsOn, Mode=TwoWay}"
-									ToolTipService.ToolTip="{x:Bind Commands.ToggleShowHiddenItems.HotKeyText, Mode=OneWay}" />
+									<TextBlock
+										Grid.Column="0"
+										VerticalAlignment="Center"
+										Text="{x:Bind Commands.ToggleShowHiddenItems.Label}" />
+
+									<ToggleSwitch
+										Grid.Column="1"
+										MinWidth="68"
+										HorizontalAlignment="Right"
+										AccessKey="H"
+										AutomationProperties.Name="{x:Bind Commands.ToggleShowHiddenItems.AutomationName}"
+										IsOn="{x:Bind Commands.ToggleShowHiddenItems.IsOn, Mode=TwoWay}"
+										ToolTipService.ToolTip="{x:Bind Commands.ToggleShowHiddenItems.HotKeyText, Mode=OneWay}" />
+								</Grid>
 
 								<!--  Show File Extensions  -->
-								<TextBlock
-									Grid.Row="1"
-									Grid.Column="0"
-									VerticalAlignment="Center"
-									Text="{x:Bind Commands.ToggleShowFileExtensions.Label}" />
+								<Grid Visibility="{x:Bind LayoutMenu.ShowFileExtensionsToggle, Mode=OneWay}">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="*" />
+										<ColumnDefinition Width="Auto" />
+									</Grid.ColumnDefinitions>
 
-								<ToggleSwitch
-									Grid.Row="1"
-									Grid.Column="1"
-									MinWidth="68"
-									HorizontalAlignment="Right"
-									AccessKey="E"
-									AutomationProperties.Name="{x:Bind Commands.ToggleShowFileExtensions.AutomationName}"
-									IsOn="{x:Bind Commands.ToggleShowFileExtensions.IsOn, Mode=TwoWay}"
-									Rotation="1"
-									ToolTipService.ToolTip="{x:Bind Commands.ToggleShowFileExtensions.HotKeyText, Mode=OneWay}" />
+									<TextBlock
+										Grid.Column="0"
+										VerticalAlignment="Center"
+										Text="{x:Bind Commands.ToggleShowFileExtensions.Label}" />
+
+									<ToggleSwitch
+										Grid.Column="1"
+										MinWidth="68"
+										HorizontalAlignment="Right"
+										AccessKey="E"
+										AutomationProperties.Name="{x:Bind Commands.ToggleShowFileExtensions.AutomationName}"
+										IsOn="{x:Bind Commands.ToggleShowFileExtensions.IsOn, Mode=TwoWay}"
+										Rotation="1"
+										ToolTipService.ToolTip="{x:Bind Commands.ToggleShowFileExtensions.HotKeyText, Mode=OneWay}" />
+								</Grid>
 
 								<!--  Adaptive Layout  -->
-								<TextBlock
-									x:Name="AdaptiveLayoutTextBlock"
-									Grid.Row="2"
-									Grid.Column="0"
-									VerticalAlignment="Center"
-									x:Load="{x:Bind Commands.LayoutAdaptive.IsExecutable, Mode=OneWay}"
-									Text="{x:Bind Commands.LayoutAdaptive.Label}" />
+								<Grid Visibility="{x:Bind LayoutMenu.ShowAdaptiveToggle, Mode=OneWay}">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="*" />
+										<ColumnDefinition Width="Auto" />
+									</Grid.ColumnDefinitions>
 
-								<ToggleSwitch
-									x:Name="AdaptiveLayoutToggleSwitch"
-									Grid.Row="2"
-									Grid.Column="1"
-									MinWidth="68"
-									HorizontalAlignment="Right"
-									x:Load="{x:Bind Commands.LayoutAdaptive.IsExecutable, Mode=OneWay}"
-									AutomationProperties.Name="{x:Bind Commands.LayoutAdaptive.AutomationName}"
-									IsEnabled="{x:Bind Commands.LayoutAdaptive.IsExecutable, Mode=OneWay}"
-									IsOn="{x:Bind Commands.LayoutAdaptive.IsOn, Mode=TwoWay}"
-									Rotation="1"
-									ToolTipService.ToolTip="{x:Bind Commands.LayoutAdaptive.LabelWithHotKey, Mode=OneWay}" />
-							</Grid>
+									<TextBlock
+										x:Name="AdaptiveLayoutTextBlock"
+										Grid.Column="0"
+										VerticalAlignment="Center"
+										x:Load="{x:Bind Commands.LayoutAdaptive.IsExecutable, Mode=OneWay}"
+										Text="{x:Bind Commands.LayoutAdaptive.Label}" />
+
+									<ToggleSwitch
+										x:Name="AdaptiveLayoutToggleSwitch"
+										Grid.Column="1"
+										MinWidth="68"
+										HorizontalAlignment="Right"
+										x:Load="{x:Bind Commands.LayoutAdaptive.IsExecutable, Mode=OneWay}"
+										AutomationProperties.Name="{x:Bind Commands.LayoutAdaptive.AutomationName}"
+										IsEnabled="{x:Bind Commands.LayoutAdaptive.IsExecutable, Mode=OneWay}"
+										IsOn="{x:Bind Commands.LayoutAdaptive.IsOn, Mode=TwoWay}"
+										Rotation="1"
+										ToolTipService.ToolTip="{x:Bind Commands.LayoutAdaptive.LabelWithHotKey, Mode=OneWay}" />
+								</Grid>
+							</StackPanel>
 
 						</StackPanel>
 					</Flyout>
