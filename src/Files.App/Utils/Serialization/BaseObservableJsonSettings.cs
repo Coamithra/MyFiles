@@ -19,7 +19,7 @@ namespace Files.App.Utils.Serialization
 			return true;
 		}
 
-		protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
+		protected internal void OnPropertyChanged([CallerMemberName] string propertyName = "")
 			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 	}
 }

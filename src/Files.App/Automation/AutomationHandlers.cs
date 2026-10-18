@@ -4,6 +4,7 @@
 using CommunityToolkit.WinUI;
 using Files.App.UserControls.TabBar;
 using System.IO;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Files.App.Automation
@@ -29,8 +30,8 @@ namespace Files.App.Automation
 			("tabs.open", "Open a tab. Params: path (optional; Home when omitted)."),
 			("tabs.select", "Select a tab. Params: index."),
 			("tabs.close", "Close a tab. Params: index. Closing the last tab closes the window."),
-			("settings.get", "User settings as JSON. Params: keys (array; all when omitted)."),
-			("settings.set", "Change user settings. Params: values (object of key to value)."),
+			("settings.get", "Stored user settings, including session keys. Params: keys (array; all when omitted). Never-changed settings are absent (null)."),
+			("settings.set", "Change user settings as their setters would. Params: values (object of key to value). Returns which changed."),
 			("window.show", "Uncloak and activate the window, for debugging the UI."),
 			("window.hide", "Cloak the window again. Keyboard focus stays on it until you click elsewhere."),
 			("quit", "Close the window as a user would."),
@@ -93,7 +94,7 @@ namespace Files.App.Automation
 			{
 				var tab = MainPageViewModel.AppInstances[i];
 				var panes = tab.TabItemContent as IShellPanesPage;
-				tabs.Add(new JsonObject
+				tabs.Add((JsonNode)new JsonObject
 				{
 					["index"] = i,
 					["header"] = tab.Header,
@@ -156,7 +157,7 @@ namespace Files.App.Automation
 			var items = new JsonArray();
 			foreach (var item in shellViewModel.FilesAndFolders.ToList().Take(limit))
 			{
-				items.Add(new JsonObject
+				items.Add((JsonNode)new JsonObject
 				{
 					["name"] = item.ItemNameRaw,
 					["path"] = item.ItemPath,
@@ -172,6 +173,15 @@ namespace Files.App.Automation
 		private static async Task<JsonNode?> NavigateAsync(JsonObject p)
 		{
 			var path = RequiredString(p, "path");
+			if (Path.IsPathFullyQualified(path))
+			{
+				path = Path.GetFullPath(path);
+
+				// Files reports a missing folder with a dialog, which a hidden window never shows. Archives are files.
+				if (!Directory.Exists(path) && !File.Exists(path))
+					throw new AutomationException($"\"{path}\" does not exist.");
+			}
+
 			var wait = p["wait"]?.GetValue<bool>() ?? true;
 			var timeout = TimeSpan.FromMilliseconds(p["timeoutMs"]?.GetValue<int>() ?? 15000);
 
@@ -194,7 +204,8 @@ namespace Files.App.Automation
 			var loaded = new TaskCompletionSource();
 			void OnItemLoadStatusChanged(object? sender, ItemLoadStatusChangedEventArgs e)
 			{
-				if (e.Status is ItemLoadStatusChangedEventArgs.ItemLoadStatus.Complete && (e.Path is null || PathEquals(e.Path, path)))
+				// Some completions (refreshes) carry no path.
+				if (e.Status is ItemLoadStatusChangedEventArgs.ItemLoadStatus.Complete && PathEquals(e.Path ?? shellViewModel?.WorkingDirectory, path))
 					loaded.TrySetResult();
 			}
 
@@ -251,7 +262,7 @@ namespace Files.App.Automation
 					!command.Label.Contains(filter, StringComparison.OrdinalIgnoreCase))
 					continue;
 
-				commands.Add(new JsonObject
+				commands.Add((JsonNode)new JsonObject
 				{
 					["code"] = code,
 					["label"] = command.Label,
@@ -301,14 +312,21 @@ namespace Files.App.Automation
 			}
 			else
 			{
-				var properties = pane.SlimContentPage!.SelectedItemsPropertiesViewModel;
+				// Entries read the selection to decide what applies, so select the items as a right-click does.
+				pane.SlimContentPage!.ItemManipulationModel.ClearSelection();
+				pane.SlimContentPage.ItemManipulationModel.AddSelectedItems(items);
+				var properties = pane.SlimContentPage.SelectedItemsPropertiesViewModel;
 				properties.CheckAllFileExtensions(items.Select(x => x.FileExtension).ToList());
 				filesItems = ContentPageContextFlyoutFactory.GetItemContextCommandsWithoutShellItems(
 					pane.InstanceViewModel, items, commandsViewModel, false, properties, null);
 			}
 
+			// The real menus skip shell entries on these pages.
+			var instance = pane.InstanceViewModel;
+			var shellApplies = !instance.IsPageTypeZipFolder && !instance.IsPageTypeFtp && !(background && instance.IsPageTypeSearchResults);
+
 			var result = new JsonObject { ["files"] = MenuTree(filesItems) };
-			if (p["shell"]?.GetValue<bool>() ?? true)
+			if (shellApplies && (p["shell"]?.GetValue<bool>() ?? true))
 			{
 				var shellItems = await ContentPageContextFlyoutFactory.GetItemContextShellCommandsAsync(
 					shellViewModel.WorkingDirectory, items, false, false, CancellationToken.None);
@@ -377,39 +395,58 @@ namespace Files.App.Automation
 		{
 			var control = Ioc.Default.GetRequiredService<IMultitaskingContext>().Control
 				?? throw new AutomationException("The tab bar is not available.");
-			control.CloseTab(TabAt(p).Tab);
+			var tab = TabAt(p).Tab;
+
+			// Closing the last tab closes the window, so do it after this response goes out.
+			if (MainPageViewModel.AppInstances.Count == 1)
+			{
+				MainWindow.Instance.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => control.CloseTab(tab));
+				return new JsonObject { ["closing"] = true };
+			}
+
+			control.CloseTab(tab);
 			return State();
 		}
 
 		private static JsonNode GetSettings(JsonObject p)
 		{
-			var settings = JsonNode.Parse(Ioc.Default.GetRequiredService<IUserSettingsService>().ExportSettings() as string ?? "{}") as JsonObject ?? [];
-			if (p["keys"] is not JsonArray keys)
-				return settings;
+			// Only settings that were ever changed are stored; the rest read as their defaults and are absent here.
+			var all = UserSettings().GetAllValues();
+			var keys = OptionalStrings(p, "keys");
 
-			var selected = new JsonObject();
-			foreach (var key in keys.Select(k => k!.GetValue<string>()))
-				selected[key] = settings[key]?.DeepClone();
+			var settings = new JsonObject();
+			foreach (var (key, value) in all.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+			{
+				if (keys is null || keys.Contains(key, StringComparer.Ordinal))
+					settings[key] = JsonNode.Parse(value.GetRawText());
+			}
 
-			return selected;
+			foreach (var missing in keys?.Where(key => !all.ContainsKey(key)) ?? [])
+				settings[missing] = null;
+
+			return settings;
 		}
 
 		private static JsonNode SetSettings(JsonObject p)
 		{
-			if (p["values"] is not JsonObject values)
+			if (p["values"] is not JsonObject values || values.Count == 0)
 				throw new AutomationException("\"values\" must be an object of setting names to values.");
 
-			// ImportSettings replaces the whole file, so merge the changes into the current settings first.
-			var service = Ioc.Default.GetRequiredService<IUserSettingsService>();
-			var settings = JsonNode.Parse(service.ExportSettings() as string ?? "{}") as JsonObject ?? [];
+			var service = UserSettings();
+			var changed = new JsonArray();
 			foreach (var (key, value) in values)
-				settings[key] = value?.DeepClone();
+			{
+				using var document = JsonDocument.Parse(value?.ToJsonString() ?? "null");
+				if (service.SetValueByName(key, document.RootElement.Clone()))
+					changed.Add((JsonNode?)JsonValue.Create(key));
+			}
 
-			if (!service.ImportSettings(settings.ToJsonString()))
-				throw new AutomationException("The settings could not be imported.");
-
-			return GetSettings(new JsonObject { ["keys"] = new JsonArray([.. values.Select(v => (JsonNode)v.Key)]) });
+			var result = GetSettings(new JsonObject { ["keys"] = new JsonArray([.. values.Select(v => (JsonNode)v.Key)]) });
+			return new JsonObject { ["changed"] = changed, ["values"] = result };
 		}
+
+		private static UserSettingsService UserSettings()
+			=> (UserSettingsService)Ioc.Default.GetRequiredService<IUserSettingsService>();
 
 		private static JsonNode ShowWindow(bool show)
 		{
@@ -436,7 +473,7 @@ namespace Files.App.Automation
 		{
 			var shellViewModel = ActivePane().ShellViewModel
 				?? throw new AutomationException("The active pane has no folder view.");
-			var names = (p["names"] as JsonArray ?? []).Select(n => n!.GetValue<string>()).ToList();
+			var names = OptionalStrings(p, "names") ?? [];
 			var items = shellViewModel.FilesAndFolders.ToList()
 				.Where(item => names.Contains(item.ItemNameRaw ?? string.Empty, StringComparer.OrdinalIgnoreCase))
 				.ToList();
@@ -457,6 +494,18 @@ namespace Files.App.Automation
 
 			return (index, MainPageViewModel.AppInstances[index]);
 		}
+
+		/// <summary>
+		/// An array of strings, or a single string as a one-item list; null when absent.
+		/// </summary>
+		private static List<string>? OptionalStrings(JsonObject p, string name)
+			=> p[name] switch
+			{
+				null => null,
+				JsonArray array => [.. array.Select(n => n?.GetValue<string>() ?? throw new AutomationException($"\"{name}\" must not contain null."))],
+				JsonValue value when value.TryGetValue<string>(out var single) => [single],
+				_ => throw new AutomationException($"\"{name}\" must be a string or an array of strings."),
+			};
 
 		private static string RequiredString(JsonObject p, string name)
 			=> p[name]?.GetValue<string>() is { Length: > 0 } value

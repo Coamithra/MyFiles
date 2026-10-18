@@ -72,12 +72,24 @@ namespace Files.App.Automation
 
 		private static async Task AcceptConnectionsAsync()
 		{
+			// Claim the name first, so a second Debug instance can't share it and split the clients between them.
+			var first = true;
 			while (true)
 			{
 				NamedPipeServerStream? pipe = null;
 				try
 				{
-					pipe = CreatePipe();
+					try
+					{
+						pipe = CreatePipe(first);
+					}
+					catch (UnauthorizedAccessException) when (first)
+					{
+						App.Logger.LogWarning("Automation pipe {PipeName} belongs to another instance; this one serves no automation", PipeName);
+						return;
+					}
+
+					first = false;
 					await pipe.WaitForConnectionAsync();
 					_ = Task.Run(() => ServeAsync(pipe));
 				}
@@ -90,7 +102,7 @@ namespace Files.App.Automation
 			}
 		}
 
-		private static NamedPipeServerStream CreatePipe()
+		private static NamedPipeServerStream CreatePipe(bool firstInstance)
 		{
 			var security = new PipeSecurity();
 			security.AddAccessRule(new PipeAccessRule(
@@ -103,7 +115,7 @@ namespace Files.App.Automation
 				PipeDirection.InOut,
 				NamedPipeServerStream.MaxAllowedServerInstances,
 				PipeTransmissionMode.Byte,
-				PipeOptions.Asynchronous,
+				firstInstance ? PipeOptions.Asynchronous | PipeOptions.FirstPipeInstance : PipeOptions.Asynchronous,
 				0,
 				0,
 				security);

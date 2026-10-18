@@ -178,8 +178,10 @@ namespace Files.App
 				}
 
 				// Always open a new instance for OpenDialog, never open new instance for "-Tag" command
-				if (parsedCommands is null || !parsedCommands.Any(x => x.Type == ParsedCommandType.OutputPath) &&
-					(OpenTabInExistingInstance || parsedCommands.Any(x => x.Type == ParsedCommandType.TagFiles)))
+				// An automation instance is always its own instance, so it can't land in the user's window.
+				if (!Automation.AutomationServer.StartHidden &&
+					(parsedCommands is null || !parsedCommands.Any(x => x.Type == ParsedCommandType.OutputPath) &&
+					(OpenTabInExistingInstance || parsedCommands.Any(x => x.Type == ParsedCommandType.TagFiles))))
 				{
 					var activePid = ApplicationData.Current.LocalSettings.Values.Get("INSTANCE_ACTIVE", -1);
 					var instance = AppInstance.FindOrRegisterForKey(activePid.ToString());
@@ -246,7 +248,9 @@ namespace Files.App
 			if (currentInstance.IsCurrent)
 				currentInstance.Activated += OnActivated;
 
-			ApplicationData.Current.LocalSettings.Values["INSTANCE_ACTIVE"] = -Environment.ProcessId;
+			// A cloaked automation instance must not receive the user's launches.
+			if (!Automation.AutomationServer.StartHidden)
+				ApplicationData.Current.LocalSettings.Values["INSTANCE_ACTIVE"] = -Environment.ProcessId;
 
 			// Optional XAML performance changes must be opted into before XAML initialization
 			XamlOptionalChanges.EnableChange(XamlChangeId.DefaultStyleOptimizations);

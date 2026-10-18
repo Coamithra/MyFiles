@@ -64,6 +64,10 @@ python .claude\scripts\files_auto.py contextMenu 'names=["notepad.exe"]'
 - Call `ping` until `ready` is true before anything else; the client waits up to `--timeout` seconds for the pipe itself.
 - Files restores the previous session's tabs on start, so close or ignore leftover tabs rather than assuming a single Home tab.
 - The pipe is Debug-only (`#if DEBUG`) and accepts only the current user. Requests are one JSON line each (`{"id":1,"method":...,"params":{...}}`), answered with `result` or `error`.
+- One instance owns the pipe: the first to start. A later Debug instance logs a warning to `debug.log` and serves nothing, so stop old instances before launching (`dev-deploy.ps1` does).
+- A hidden instance never takes part in single-instance redirection, so your own launches never open tabs in the invisible window.
+- `settings.set` writes through `UserSettingsService.SetValueByName`, which raises the same change notifications as the property setters. Prefer it to `ImportSettings`, which rewrites the whole file and drops session and history keys.
+- `navigate` rejects file-system paths that don't exist, because Files reports them with a dialog that a hidden window never shows.
 - Add a method when a card needs one: a `Methods` entry plus a case in `AutomationHandlers.InvokeAsync`. Build results with `System.Text.Json.Nodes` (no reflection).
 
 ## Out of scope

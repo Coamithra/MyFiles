@@ -108,12 +108,14 @@ Add-AppxPackage -Register $manifest -ForceApplicationShutdown
 $package = Get-AppxPackage -Name $name
 "Registered: $($package.PackageFamilyName) from $($package.InstallLocation)"
 
+if ($NoLaunch) { return }
+
 if ($Hidden) {
 	# The execution alias passes the flag through; shell:AppsFolder activation can't.
 	Start-Process (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\files-dev.exe') -ArgumentList '-AutomationHidden'
 	"Launched hidden."
 }
-elseif (-not $NoLaunch) {
+else {
 	Start-Process "shell:AppsFolder\$($package.PackageFamilyName)!App"
 	"Launched."
 }
