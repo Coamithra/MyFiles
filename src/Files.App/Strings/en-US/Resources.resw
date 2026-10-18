@@ -2541,6 +2541,24 @@
   <data name="OpenTerminalAsAdmin" xml:space="preserve">
     <value>Open in Windows Terminal as administrator</value>
   </data>
+  <data name="OpenInCommandPrompt" xml:space="preserve">
+    <value>Open in Command Prompt</value>
+  </data>
+  <data name="OpenInCommandPromptAsAdmin" xml:space="preserve">
+    <value>Open in Command Prompt as administrator</value>
+  </data>
+  <data name="OpenInPowerShell" xml:space="preserve">
+    <value>Open in PowerShell</value>
+  </data>
+  <data name="OpenInPowerShellAsAdmin" xml:space="preserve">
+    <value>Open in PowerShell as administrator</value>
+  </data>
+  <data name="OpenInCustomTerminal" xml:space="preserve">
+    <value>Open in terminal</value>
+  </data>
+  <data name="OpenInCustomTerminalAsAdmin" xml:space="preserve">
+    <value>Open in terminal as administrator</value>
+  </data>
   <data name="Save" xml:space="preserve">
     <value>Save</value>
   </data>
@@ -4658,7 +4676,28 @@
     <value>No signature was found.</value>
   </data>
   <data name="ShowOpenTerminal" xml:space="preserve">
-    <value>Show option to open folders in Windows Terminal</value>
+    <value>Show option to open folders in a terminal</value>
+  </data>
+  <data name="TerminalSetting" xml:space="preserve">
+    <value>Terminal</value>
+  </data>
+  <data name="TerminalSettingDescription" xml:space="preserve">
+    <value>Opens from the right-click menu and with Ctrl+' (Ctrl+Shift+' as administrator)</value>
+  </data>
+  <data name="CommandPrompt" xml:space="preserve">
+    <value>Command Prompt</value>
+  </data>
+  <data name="PowerShell" xml:space="preserve">
+    <value>PowerShell</value>
+  </data>
+  <data name="WindowsTerminal" xml:space="preserve">
+    <value>Windows Terminal</value>
+  </data>
+  <data name="WindowsDefaultTerminal" xml:space="preserve">
+    <value>Windows default terminal</value>
+  </data>
+  <data name="CustomTerminalArgumentsDescription" xml:space="preserve">
+    <value>{path} is replaced with the folder's path</value>
   </data>
   <data name="OpenLogFile" xml:space="preserve">
     <value>Open log file</value>
