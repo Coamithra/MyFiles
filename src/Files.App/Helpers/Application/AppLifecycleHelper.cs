@@ -416,7 +416,7 @@ namespace Files.App.Helpers
 		{
 			var userSettingsService = Ioc.Default.GetRequiredService<IUserSettingsService>();
 
-			userSettingsService.GeneralSettingsService.LastSessionTabList = MainPageViewModel.AppInstances.DefaultIfEmpty().Select(tab =>
+			var sessionTabs = MainPageViewModel.AppInstances.DefaultIfEmpty().Select(tab =>
 			{
 				if (tab is not null && PaneHistoryHelper.CaptureTab(tab) is { } parameter)
 				{
@@ -428,8 +428,13 @@ namespace Files.App.Helpers
 				}
 			})
 			.ToList();
+			var selectedIndex = App.AppModel.TabStripSelectedIndex;
 
-			userSettingsService.GeneralSettingsService.LastSessionSelectedTabIndex = App.AppModel.TabStripSelectedIndex;
+			userSettingsService.GeneralSettingsService.LastSessionTabList = sessionTabs;
+			userSettingsService.GeneralSettingsService.LastSessionSelectedTabIndex = selectedIndex;
+
+			// The shared list above is last-writer-wins across windows; each window also keeps its own
+			WindowSessionManager.Save(sessionTabs, selectedIndex);
 		}
 
 		// XAML delivers Application.UnhandledException with the managed stack already stripped,
@@ -602,16 +607,18 @@ namespace Files.App.Helpers
 					{
 						// Avoid infinite restart loop
 						userSettingsService.GeneralSettingsService.LastSessionTabList = null;
+						WindowSessionManager.Forget();
 					}
 					else
 					{
 						userSettingsService.AppSettingsService.RestoreTabsOnStartup = true;
 						userSettingsService.GeneralSettingsService.LastCrashedTabList = lastSessionTabList;
 
-						// Try to re-launch and start over
+						// Try to re-launch and start over, as this same window even while other windows run
+						var relaunchUri = WindowSessionManager.PrepareRelaunchUri();
 						MainWindow.Instance.DispatcherQueue.EnqueueOrInvokeAsync(async () =>
 						{
-							await Launcher.LaunchUriAsync(new Uri("files-dev:"));
+							await Launcher.LaunchUriAsync(new Uri(relaunchUri));
 						})
 						.Wait(100);
 					}

@@ -30,6 +30,10 @@ namespace Files.App
 
 		protected override bool PersistPlacement => true;
 
+		// A restored window opens where it was; a new one where the last window closed
+		protected override string? GetPlacementToRestore()
+			=> WindowSessionManager.AdoptedPlacement ?? base.GetPlacementToRestore();
+
 		public MainWindow() : base(416, 316)
 		{
 			InitializeComponent();
@@ -106,6 +110,9 @@ namespace Files.App
 
 			if (rootFrame is null)
 				return;
+
+			// A no-op unless the window started parked at sign-in and is only now being shown
+			WindowSessionManager.EnsureInitialized(activatedEventArgs);
 
 			switch (activatedEventArgs)
 			{
@@ -192,6 +199,13 @@ namespace Files.App
 							case "window":
 								rootFrame.Navigate(typeof(MainPage),
 									new MainPageNavigationArguments() { Parameter = "Home", IgnoreStartupSettings = true },
+									new SuppressNavigationTransitionInfo());
+								break;
+
+							// Relaunch of a saved window; one that can't be restored opens fresh, as a new window does
+							case "session":
+								rootFrame.Navigate(typeof(MainPage),
+									WindowSessionManager.HasStartupTabs ? null : new MainPageNavigationArguments() { Parameter = "Home", IgnoreStartupSettings = true },
 									new SuppressNavigationTransitionInfo());
 								break;
 
