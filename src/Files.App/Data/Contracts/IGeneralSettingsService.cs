@@ -306,6 +306,11 @@ namespace Files.App.Data.Contracts
 		bool ShowSystemTrayIcon { get; set; }
 
 		/// <summary>
+		/// Gets or sets a value indicating whether search uses voidtools Everything when it's running.
+		/// </summary>
+		bool UseEverythingForSearch { get; set; }
+
+		/// <summary>
 		/// Gets or sets a value indicating the default option to resolve conflicts.
 		/// </summary>
 		FileNameConflictResolveOptionType ConflictsResolveOption { get; set; }

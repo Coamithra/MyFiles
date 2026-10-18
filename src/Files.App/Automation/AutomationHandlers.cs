@@ -28,6 +28,7 @@ namespace Files.App.Automation
 			("contextMenu", "Files' own and shell entries of the right-click menu, as rendered: primary marks the icon row (only when it is enabled), verb is the shell verb. Params: names (items; omit for the background menu), shell (default true)."),
 			("newMenu", "Entries of the New submenu that come from the shell (ShellNew); hidden marks the ones hidden in Settings."),
 			("sidebar", "Sidebar sections and their items."),
+			("search", "Search and report which backends served it. Params: query, path (default: the active pane's folder; Home allowed), max (default 100; 0 = no limit), limit (paths returned, default 20), ui (default false: run the search through the active pane's results page)."),
 			("tabs.open", "Open a tab. Params: path (optional; Home when omitted)."),
 			("tabs.select", "Select a tab. Params: index."),
 			("tabs.close", "Close a tab. Params: index. Closing the last tab closes the window."),
@@ -61,6 +62,7 @@ namespace Files.App.Automation
 				"contextMenu" => ContextMenuAsync(p),
 				"newMenu" => Done(NewMenu()),
 				"sidebar" => Done(Sidebar()),
+				"search" => SearchAsync(p),
 				"tabs.open" => OpenTabAsync(p),
 				"tabs.select" => Done(SelectTab(p)),
 				"tabs.close" => Done(CloseTab(p)),
@@ -384,6 +386,80 @@ namespace Files.App.Automation
 					["type"] = item.ItemType.ToString(),
 					["items"] = item.Children is IEnumerable<INavigationControlItem> children ? SidebarTree(children) : null,
 				})]);
+		}
+
+		private static async Task<JsonNode?> SearchAsync(JsonObject p)
+		{
+			var query = RequiredString(p, "query");
+			var path = p["path"]?.GetValue<string>();
+			var limit = p["limit"]?.GetValue<int>() ?? 20;
+			var everything = await Task.Run(EverythingSearch.GetStatus);
+			var stopwatch = Stopwatch.StartNew();
+
+			FolderSearchBackends backends;
+			List<ListedItem> results;
+			if (p["ui"]?.GetValue<bool>() ?? false)
+			{
+				if (path is not null)
+					await NavigateAsync(new JsonObject { ["path"] = path });
+
+				var pane = ActivePane();
+				var shellViewModel = pane.ShellViewModel
+					?? throw new AutomationException("The active pane has no folder view.");
+
+				var completed = new TaskCompletionSource();
+				void OnItemLoadStatusChanged(object? sender, ItemLoadStatusChangedEventArgs e)
+				{
+					if (e.Status is ItemLoadStatusChangedEventArgs.ItemLoadStatus.Complete && shellViewModel.IsSearchResults)
+						completed.TrySetResult();
+				}
+
+				shellViewModel.ItemLoadStatusChanged += OnItemLoadStatusChanged;
+				try
+				{
+					pane.SubmitSearch(query);
+					await WaitUntilAsync(TimeSpan.FromSeconds(60), () => completed.Task.IsCompleted, $"The search for \"{query}\" did not finish");
+				}
+				finally
+				{
+					shellViewModel.ItemLoadStatusChanged -= OnItemLoadStatusChanged;
+				}
+
+				backends = FolderSearch.LastResultsPageBackends;
+				results = shellViewModel.FilesAndFolders.ToList();
+			}
+			else
+			{
+				var folder = path ?? ActivePane().ShellViewModel?.WorkingDirectory
+					?? throw new AutomationException("The active pane has no folder; pass \"path\".");
+				if (Path.IsPathFullyQualified(folder))
+					folder = Path.GetFullPath(folder);
+
+				var search = new FolderSearch
+				{
+					Query = query,
+					Folder = folder,
+					MaxItemCount = (uint)(p["max"]?.GetValue<int>() ?? 100),
+				};
+
+				results = [];
+				await search.SearchAsync(results, CancellationToken.None);
+				backends = search.UsedBackends;
+			}
+
+			return new JsonObject
+			{
+				["backends"] = backends.ToString(),
+				["count"] = results.Count,
+				["elapsedMs"] = stopwatch.ElapsedMilliseconds,
+				["everything"] = new JsonObject
+				{
+					["running"] = everything.IsRunning,
+					["databaseLoaded"] = everything.IsDatabaseLoaded,
+					["version"] = everything.Version,
+				},
+				["paths"] = new JsonArray([.. results.Take(limit).Select(item => (JsonNode?)item.ItemPath)]),
+			};
 		}
 
 		private static async Task<JsonNode?> OpenTabAsync(JsonObject p)
