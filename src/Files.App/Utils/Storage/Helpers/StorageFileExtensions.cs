@@ -408,10 +408,16 @@ namespace Files.App.Utils.Storage
 			if (ShellStorageFolder.IsShellPath(path))
 				return ShellHelpers.ResolveShellPath(path);
 
+			var separatorChar = isFtp || path.Contains('/', StringComparison.Ordinal) ? '/' : '\\';
+
+			// The loop reads a final segment one character short, so a trailing dot segment is resolved as if a separator followed it
+			var hasTrailingDotSegment = !isFtp && path[(path.LastIndexOfAny(['\\', '/']) + 1)..] is "." or "..";
+			if (hasTrailingDotSegment)
+				path += separatorChar;
+
 			var pathBuilder = new StringBuilder(path);
 			var lastPathIndex = path.Length - 1;
-			var separatorChar = isFtp || path.Contains('/', StringComparison.Ordinal) ? '/' : '\\';
-			var rootIndex = isFtp ? FtpHelpers.GetRootIndex(path) + 1 : path.IndexOf($":{separatorChar}", StringComparison.Ordinal) + 2;
+			int GetRootIndex(string value) => isFtp ? FtpHelpers.GetRootIndex(value) + 1 : value.IndexOf($":{separatorChar}", StringComparison.Ordinal) + 2;
 
 			for (int i = 0, lastIndex = 0; i < pathBuilder.Length; i++)
 			{
@@ -434,7 +440,7 @@ namespace Files.App.Utils.Storage
 					{
 						SetCurrentWorkingDirectory(pathBuilder, separatorChar, lastIndex, ref i);
 					}
-					else if (lastIndex == rootIndex)
+					else if (lastIndex == GetRootIndex(pathBuilder.ToString()))
 					{
 						pathBuilder.Remove(lastIndex, DOUBLE_DOT_DIRECTORY_LENGTH);
 						i = lastIndex - 1;
@@ -471,7 +477,7 @@ namespace Files.App.Utils.Storage
 				lastIndex = i + 1;
 			}
 
-			return pathBuilder.ToString();
+			return hasTrailingDotSegment ? Path.TrimEndingDirectorySeparator(pathBuilder.ToString()) : pathBuilder.ToString();
 		}
 
 		private static void SetCurrentWorkingDirectory(StringBuilder path, char separator, int substringIndex, ref int i)
@@ -480,7 +486,7 @@ namespace Files.App.Utils.Storage
 			var subPath = path.ToString().Substring(substringIndex);
 
 			path.Clear();
-			path.Append(context.ShellPage?.ShellViewModel?.WorkingDirectory);
+			path.Append(context.ShellPage?.ShellViewModel?.WorkingDirectory?.TrimEnd('\\', '/'));
 			path.Append(separator);
 			path.Append(subPath);
 			i = -1;
