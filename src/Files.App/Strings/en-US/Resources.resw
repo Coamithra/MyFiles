@@ -4198,6 +4198,12 @@
   <data name="LayoutType" xml:space="preserve">
     <value>Layout type</value>
   </data>
+  <data name="LayoutMenuEntries" xml:space="preserve">
+    <value>Layout menu</value>
+  </data>
+  <data name="LayoutMenuEntriesDescription" xml:space="preserve">
+    <value>Choose what the toolbar's Layout menu shows. Layout types you hide also leave the Layout submenu of the right-click menu. If you hide everything, the Layout button disappears.</value>
+  </data>
   <data name="Actions" xml:space="preserve">
     <value>Actions</value>
   </data>
