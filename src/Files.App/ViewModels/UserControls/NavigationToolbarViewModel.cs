@@ -1003,13 +1003,29 @@ namespace Files.App.ViewModels.UserControls
 
 		public async Task PopulateOmnibarSuggestionsForPathMode()
 		{
+			// Fork: non-path text suggests Everything matches; only the latest call updates the list
+			var suggestionsToken = BeginPathModeSuggestions();
+			List<OmnibarPathModeSuggestionModel>? searchSuggestions;
+			try
+			{
+				searchSuggestions = await GetPathModeSearchSuggestionsAsync(suggestionsToken);
+			}
+			catch (OperationCanceledException)
+			{
+				return;
+			}
+
+			PathModeSuggestionsSource = searchSuggestions is null ? "path" : "everything";
+
 			var result = await SafetyExtensions.IgnoreExceptions((Func<Task<bool>>)(async () =>
 			{
 				List<OmnibarPathModeSuggestionModel> newSuggestions = [];
 				var pathText = this.PathText;
 
+				if (searchSuggestions is not null)
+					newSuggestions.AddRange(searchSuggestions);
 				// If the current input is special, populate navigation history instead.
-				if (string.IsNullOrWhiteSpace(pathText) ||
+				else if (string.IsNullOrWhiteSpace(pathText) ||
 					pathText is "Home" or "ReleaseNotes" or "Settings")
 				{
 					// Load previously entered path
@@ -1047,6 +1063,9 @@ namespace Files.App.ViewModels.UserControls
 							PathNormalization.Combine(firstDisplayName, x.Item!.DisplayName))));
 					}
 				}
+
+				if (suggestionsToken.IsCancellationRequested)
+					return true;
 
 				// If there are no suggestions, show "No suggestions"
 				if (newSuggestions.Count is 0)
@@ -1095,7 +1114,7 @@ namespace Files.App.ViewModels.UserControls
 					=> new(folder.Path, folder.Item!.DisplayName);
 			}));
 
-			if (!result)
+			if (!result && !suggestionsToken.IsCancellationRequested)
 			{
 				AddNoResultsItem();
 			}
@@ -1309,7 +1328,10 @@ namespace Files.App.ViewModels.UserControls
 		public void CancelSuggestionSearch()
 		{
 			if (!_isDisposed)
+			{
 				_suggestSearchCTS.Cancel();
+				_pathModeSuggestionsCts.Cancel();
+			}
 		}
 
 		// Disposer
@@ -1322,6 +1344,8 @@ namespace Files.App.ViewModels.UserControls
 			_isDisposed = true;
 			_suggestSearchCTS.Cancel();
 			_suggestSearchCTS.Dispose();
+			_pathModeSuggestionsCts.Cancel();
+			_pathModeSuggestionsCts.Dispose();
 			_dragOverTimer?.Stop();
 			_dragOverTimer = null;
 			InstanceViewModel = null!;

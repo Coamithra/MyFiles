@@ -650,7 +650,7 @@ namespace Files.App.Utils.Storage
 			return handle;
 		}
 
-		private static bool RequiresFindTimeout(string root)
+		internal static bool RequiresFindTimeout(string root)
 		{
 			if (DriveHelpers.IsNetworkPath(root))
 				return true;

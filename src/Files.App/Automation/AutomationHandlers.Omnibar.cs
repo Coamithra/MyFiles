@@ -6,6 +6,7 @@ using Files.App.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -33,6 +34,38 @@ namespace Files.App.Automation
 				["focused"] = omnibar?.IsFocused,
 				["pathText"] = viewModel.PathText,
 				["searchButtonVisible"] = viewModel.IsOmnibarSearchModeVisible,
+			};
+		}
+
+		private static async Task<JsonNode?> SuggestOmnibarAsync(JsonObject p)
+		{
+			// Empty text is valid here: it shows the path history
+			var text = p["text"]?.GetValue<string>()
+				?? throw new AutomationException("\"text\" is required.");
+			var timeout = TimeSpan.FromMilliseconds(p["timeoutMs"]?.GetValue<int>() ?? 10000);
+
+			var viewModel = AddressBar().ViewModel
+				?? throw new AutomationException("The address bar has no view model yet.");
+
+			// As typing does through the TwoWay binding, then the populate call Omnibar_TextChanged makes
+			var started = Stopwatch.GetTimestamp();
+			viewModel.PathText = text;
+			var populate = viewModel.PopulateOmnibarSuggestionsForPathMode();
+			var settled = await Task.WhenAny(populate, Task.Delay(timeout)) == populate;
+			if (settled)
+				await populate;
+
+			return new JsonObject
+			{
+				["pending"] = !settled,
+				["source"] = viewModel.PathModeSuggestionsSource,
+				["elapsedMs"] = (int)Stopwatch.GetElapsedTime(started).TotalMilliseconds,
+				["items"] = new JsonArray([.. viewModel.PathModeSuggestionItems.Select(item => (JsonNode)new JsonObject
+				{
+					["path"] = item.Path,
+					["displayName"] = item.DisplayName,
+				})]),
+				["omnibar"] = OmnibarState(),
 			};
 		}
 
