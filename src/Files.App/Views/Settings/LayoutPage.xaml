@@ -62,6 +62,23 @@
 				</uc:ComboBoxEx>
 			</wctcontrols:SettingsCard>
 
+			<!--  Layout menu entries  -->
+			<wctcontrols:SettingsExpander
+				Description="{helpers:ResourceString Name=LayoutMenuEntriesDescription}"
+				Header="{helpers:ResourceString Name=LayoutMenuEntries}"
+				ItemsSource="{x:Bind LayoutMenu.Entries, Mode=OneWay}">
+				<wctcontrols:SettingsExpander.HeaderIcon>
+					<FontIcon Glyph="&#xE8A9;" />
+				</wctcontrols:SettingsExpander.HeaderIcon>
+				<wctcontrols:SettingsExpander.ItemTemplate>
+					<DataTemplate x:DataType="vm:LayoutMenuEntryItem">
+						<wctcontrols:SettingsCard Header="{x:Bind Label}">
+							<CheckBox AutomationProperties.Name="{x:Bind Label}" IsChecked="{x:Bind IsShown, Mode=TwoWay}" />
+						</wctcontrols:SettingsCard>
+					</DataTemplate>
+				</wctcontrols:SettingsExpander.ItemTemplate>
+			</wctcontrols:SettingsExpander>
+
 			<!--  Sorting & grouping  -->
 			<TextBlock
 				Padding="0,16,0,4"
