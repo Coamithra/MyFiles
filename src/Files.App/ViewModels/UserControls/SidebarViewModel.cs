@@ -388,7 +388,7 @@ namespace Files.App.ViewModels.UserControls
 				Func<IReadOnlyList<INavigationControlItem>> getElements = () => sectionType switch
 				{
 					SectionType.Pinned => App.QuickAccessManager.Model.PinnedFolderItems,
-					SectionType.CloudDrives => CloudDrivesManager.Drives,
+					SectionType.CloudDrives => GetVisibleCloudDrives(),
 					SectionType.Drives => drivesViewModel.Drives.Cast<DriveItem>().ToList().AsReadOnly(),
 					SectionType.Network => NetworkService.Computers.Cast<DriveItem>().ToList().AsReadOnly(),
 					SectionType.WSL => WSLDistroManager.Distros,
@@ -492,6 +492,9 @@ namespace Files.App.ViewModels.UserControls
 			}
 			else if (elem is DriveItem drive)
 			{
+				if (section.Section is SectionType.CloudDrives && IsCloudDriveHidden(drive))
+					return;
+
 				if (section.Section is SectionType.Network or SectionType.CloudDrives)
 				{
 					// Already sorted
@@ -564,7 +567,9 @@ namespace Files.App.ViewModels.UserControls
 			switch (sectionType)
 			{
 				case SectionType.Home:
-					section = BuildSection(Strings.Home.GetLocalizedResource(), sectionType, new ContextMenuOptions { IsLocationItem = true }, true);
+					if (!ShowHomeSection)
+						break;
+					section = BuildSection(Strings.Home.GetLocalizedResource(), sectionType, new ContextMenuOptions { IsLocationItem = true, ShowHideSection = true }, true);
 					section.Path = "Home";
 					section.IsHeader = true;
 					break;
@@ -597,7 +602,7 @@ namespace Files.App.ViewModels.UserControls
 					break;
 
 				case SectionType.CloudDrives:
-					if (ShowCloudDrivesSection == false || CloudDrivesManager.Drives.Any() == false)
+					if (ShowCloudDrivesSection == false || GetVisibleCloudDrives().Any() == false)
 						break;
 					section = BuildSection(Strings.SidebarCloudDrives.GetLocalizedResource(), sectionType, new ContextMenuOptions { ShowHideSection = true }, false);
 					section.IsHeader = true;
@@ -732,6 +737,13 @@ namespace Files.App.ViewModels.UserControls
 					await SyncBookmarksSectionAsync();
 					OnPropertyChanged(nameof(ShowBookmarksSection));
 					OnPropertyChanged(nameof(AreSectionsHidden));
+					break;
+				case nameof(UserSettingsService.GeneralSettingsService.ShowHomeSection):
+					await SyncHomeSectionAsync();
+					OnPropertyChanged(nameof(ShowHomeSection));
+					break;
+				case nameof(UserSettingsService.GeneralSettingsService.HiddenSidebarCloudDrives):
+					SyncCloudDriveVisibility();
 					break;
 				case nameof(UserSettingsService.FoldersSettingsService.ShowHiddenItems):
 					await ReloadFilteredSubfoldersAsync();
@@ -971,6 +983,9 @@ namespace Files.App.ViewModels.UserControls
 
 			switch (item.Section)
 			{
+				case SectionType.Home:
+					UserSettingsService.GeneralSettingsService.ShowHomeSection = false;
+					break;
 				case SectionType.Pinned:
 					UserSettingsService.GeneralSettingsService.ShowPinnedSection = false;
 					break;
@@ -1204,6 +1219,13 @@ namespace Files.App.ViewModels.UserControls
 					Glyph = "\uE77A",
 					Command = HideSectionCommand,
 					ShowItem = options.ShowHideSection
+				},
+				new ContextMenuFlyoutItemViewModel()
+				{
+					Text = Strings.HideFromSidebar.GetLocalizedResource(),
+					Glyph = "\uE77A",
+					Command = HideCloudDriveCommand,
+					ShowItem = item is DriveItem { Type: Data.Items.DriveType.CloudDrive }
 				},
 				new ContextMenuFlyoutItemViewModel()
 				{

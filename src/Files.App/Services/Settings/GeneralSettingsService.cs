@@ -215,6 +215,18 @@ namespace Files.App.Services.Settings
 			set => Set(value);
 		}
 
+		public bool ShowHomeSection
+		{
+			get => Get(true);
+			set => Set(value);
+		}
+
+		public List<string>? HiddenSidebarCloudDrives
+		{
+			get => Get<List<string>>(null);
+			set => Set(value);
+		}
+
 		public bool IsPinnedSectionExpanded
 		{
 			get => Get(true);
@@ -344,6 +356,24 @@ namespace Files.App.Services.Settings
 		public bool ShowOpenTerminal
 		{
 			get => Get(true);
+			set => Set(value);
+		}
+
+		public TerminalType TerminalType
+		{
+			get => Get(TerminalType.CommandPrompt);
+			set => Set(value);
+		}
+
+		public string CustomTerminalPath
+		{
+			get => Get(string.Empty) ?? string.Empty;
+			set => Set(value);
+		}
+
+		public string CustomTerminalArguments
+		{
+			get => Get(string.Empty) ?? string.Empty;
 			set => Set(value);
 		}
 

@@ -215,6 +215,74 @@
 				</wctcontrols:SettingsExpander.Items>
 			</wctcontrols:SettingsExpander>
 
+			<!--  Sidebar  -->
+			<TextBlock
+				Padding="0,16,0,4"
+				FontSize="16"
+				FontWeight="Medium"
+				Text="{helpers:ResourceString Name=Sidebar}" />
+
+			<!--  Sidebar sections  -->
+			<wctcontrols:SettingsExpander Header="{helpers:ResourceString Name=SidebarSections}">
+				<wctcontrols:SettingsExpander.HeaderIcon>
+					<FontIcon Glyph="&#xE8A0;" />
+				</wctcontrols:SettingsExpander.HeaderIcon>
+				<wctcontrols:SettingsExpander.Items>
+					<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=Home}">
+						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=Home}" IsOn="{x:Bind SidebarDeclutter.ShowHomeSection, Mode=TwoWay}" />
+					</wctcontrols:SettingsCard>
+
+					<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=Pinned}">
+						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=Pinned}" IsOn="{x:Bind SidebarDeclutter.ShowPinnedSection, Mode=TwoWay}" />
+					</wctcontrols:SettingsCard>
+
+					<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=Bookmarks}">
+						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=Bookmarks}" IsOn="{x:Bind SidebarDeclutter.ShowBookmarksSection, Mode=TwoWay}" />
+					</wctcontrols:SettingsCard>
+
+					<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=SidebarLibraries}">
+						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=SidebarLibraries}" IsOn="{x:Bind SidebarDeclutter.ShowLibrarySection, Mode=TwoWay}" />
+					</wctcontrols:SettingsCard>
+
+					<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=Drives}">
+						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=Drives}" IsOn="{x:Bind SidebarDeclutter.ShowDrivesSection, Mode=TwoWay}" />
+					</wctcontrols:SettingsCard>
+
+					<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=SidebarCloudDrives}">
+						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=SidebarCloudDrives}" IsOn="{x:Bind SidebarDeclutter.ShowCloudDrivesSection, Mode=TwoWay}" />
+					</wctcontrols:SettingsCard>
+
+					<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=Network}">
+						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=Network}" IsOn="{x:Bind SidebarDeclutter.ShowNetworkSection, Mode=TwoWay}" />
+					</wctcontrols:SettingsCard>
+
+					<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=WSL}">
+						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=WSL}" IsOn="{x:Bind SidebarDeclutter.ShowWslSection, Mode=TwoWay}" />
+					</wctcontrols:SettingsCard>
+
+					<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=FileTags}">
+						<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=FileTags}" IsOn="{x:Bind SidebarDeclutter.ShowFileTagsSection, Mode=TwoWay}" />
+					</wctcontrols:SettingsCard>
+				</wctcontrols:SettingsExpander.Items>
+			</wctcontrols:SettingsExpander>
+
+			<!--  Cloud drives in the sidebar  -->
+			<wctcontrols:SettingsExpander
+				Description="{helpers:ResourceString Name=SidebarCloudDriveVisibilityDescription}"
+				Header="{helpers:ResourceString Name=SidebarCloudDriveVisibility}"
+				ItemsSource="{x:Bind SidebarDeclutter.CloudDrives, Mode=OneWay}">
+				<wctcontrols:SettingsExpander.HeaderIcon>
+					<FontIcon Glyph="&#xE753;" />
+				</wctcontrols:SettingsExpander.HeaderIcon>
+				<wctcontrols:SettingsExpander.ItemTemplate>
+					<DataTemplate x:DataType="vm:SidebarCloudDriveEntry">
+						<wctcontrols:SettingsCard Description="{x:Bind Path}" Header="{x:Bind Name}">
+							<CheckBox AutomationProperties.Name="{x:Bind Name}" IsChecked="{x:Bind IsShown, Mode=TwoWay}" />
+						</wctcontrols:SettingsCard>
+					</DataTemplate>
+				</wctcontrols:SettingsExpander.ItemTemplate>
+			</wctcontrols:SettingsExpander>
+
 			<!--  Dual Pane  -->
 			<TextBlock
 				Padding="0,16,0,4"
@@ -329,6 +397,39 @@
 					</wctcontrols:SettingsCard>
 				</wctcontrols:SettingsExpander.Items>
 			</wctcontrols:SettingsExpander>
+
+			<!--  Terminal  -->
+			<wctcontrols:SettingsCard Description="{helpers:ResourceString Name=TerminalSettingDescription}" Header="{helpers:ResourceString Name=TerminalSetting}">
+				<wctcontrols:SettingsCard.HeaderIcon>
+					<FontIcon Glyph="&#xE756;" />
+				</wctcontrols:SettingsCard.HeaderIcon>
+				<uc:ComboBoxEx AutomationProperties.Name="{helpers:ResourceString Name=TerminalSetting}" SelectedIndex="{x:Bind Terminal.SelectedTerminalIndex, Mode=TwoWay}">
+					<ComboBoxItem Content="{helpers:ResourceString Name=CommandPrompt}" />
+					<ComboBoxItem Content="{helpers:ResourceString Name=PowerShell}" />
+					<ComboBoxItem Content="{helpers:ResourceString Name=WindowsTerminal}" />
+					<ComboBoxItem Content="{helpers:ResourceString Name=Custom}" />
+					<ComboBoxItem Content="{helpers:ResourceString Name=WindowsDefaultTerminal}" />
+				</uc:ComboBoxEx>
+			</wctcontrols:SettingsCard>
+
+			<!--  Custom terminal executable  -->
+			<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=PathOrAlias}" Visibility="{x:Bind Terminal.IsCustomTerminal, Mode=OneWay}">
+				<TextBox
+					Width="240"
+					AutomationProperties.Name="{helpers:ResourceString Name=PathOrAlias}"
+					Text="{x:Bind Terminal.CustomTerminalPath, Mode=TwoWay}" />
+			</wctcontrols:SettingsCard>
+
+			<!--  Custom terminal arguments  -->
+			<wctcontrols:SettingsCard
+				Description="{helpers:ResourceString Name=CustomTerminalArgumentsDescription}"
+				Header="{helpers:ResourceString Name=Arguments}"
+				Visibility="{x:Bind Terminal.IsCustomTerminal, Mode=OneWay}">
+				<TextBox
+					Width="240"
+					AutomationProperties.Name="{helpers:ResourceString Name=Arguments}"
+					Text="{x:Bind Terminal.CustomTerminalArguments, Mode=TwoWay}" />
+			</wctcontrols:SettingsCard>
 
 			<!--  Overflow Options  -->
 			<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=SettingsContextMenuOverflow}">

@@ -29,6 +29,7 @@ namespace Files.App.Services.Settings
 	[JsonSerializable(typeof(SingleClickOpenMode))]
 	[JsonSerializable(typeof(SizeUnitTypes))]
 	[JsonSerializable(typeof(OpenInIDEOption))]
+	[JsonSerializable(typeof(TerminalType))]
 	[JsonSerializable(typeof(BackdropMaterialType))]
 	[JsonSerializable(typeof(Stretch))]
 	[JsonSerializable(typeof(VerticalAlignment))]

@@ -99,6 +99,42 @@ namespace Files.App.Data.Factories
 
 			bool isDriveRoot = itemViewModel?.CurrentFolder is not null && (itemViewModel.CurrentFolder.ItemPath == Path.GetPathRoot(itemViewModel.CurrentFolder.ItemPath));
 
+			// The Layout submenu drops the entries hidden from the Layout menu in Settings, and itself when none remain.
+			var layoutMenu = LayoutMenuVisibility.Instance;
+			List<ContextMenuFlyoutItemViewModel> layoutItems =
+			[
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutDetails)
+				{
+					IsToggle = true,
+					IsVisible = !layoutMenu.IsEntryHidden(nameof(CommandCodes.LayoutDetails)) && Commands.LayoutDetails.IsExecutable,
+				}.Build(),
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutCards)
+				{
+					IsToggle = true,
+					IsVisible = !layoutMenu.IsEntryHidden(nameof(CommandCodes.LayoutCards)) && Commands.LayoutCards.IsExecutable,
+				}.Build(),
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutList)
+				{
+					IsToggle = true,
+					IsVisible = !layoutMenu.IsEntryHidden(nameof(CommandCodes.LayoutList)) && Commands.LayoutList.IsExecutable,
+				}.Build(),
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutGrid)
+				{
+					IsToggle = true,
+					IsVisible = !layoutMenu.IsEntryHidden(nameof(CommandCodes.LayoutGrid)) && Commands.LayoutGrid.IsExecutable,
+				}.Build(),
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutColumns)
+				{
+					IsToggle = true,
+					IsVisible = !layoutMenu.IsEntryHidden(nameof(CommandCodes.LayoutColumns)) && Commands.LayoutColumns.IsExecutable,
+				}.Build(),
+				new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutAdaptive)
+				{
+					IsToggle = true,
+					IsVisible = !layoutMenu.IsEntryHidden(nameof(CommandCodes.LayoutAdaptive)) && Commands.LayoutAdaptive.IsExecutable,
+				}.Build(),
+			];
+
 			return new List<ContextMenuFlyoutItemViewModel>()
 			{
 				new ContextMenuFlyoutItemViewModelBuilder(Commands.CloseActivePane)
@@ -114,38 +150,12 @@ namespace Files.App.Data.Factories
 				{
 					Text = Strings.Layout.GetLocalizedResource(),
 					Glyph = "\uE8A9",
-					ShowItem = !itemsSelected,
+					ShowItem = !itemsSelected && layoutItems.Any(x => x.ShowItem),
 					ShowInRecycleBin = true,
 					ShowInSearchPage = true,
 					ShowInFtpPage = true,
 					ShowInZipPage = true,
-					Items =
-					[
-						new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutDetails)
-						{
-							IsToggle = true
-						}.Build(),
-						new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutCards)
-						{
-							IsToggle = true
-						}.Build(),
-						new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutList)
-						{
-							IsToggle = true
-						}.Build(),
-						new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutGrid)
-						{
-							IsToggle = true
-						}.Build(),
-						new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutColumns)
-						{
-							IsToggle = true
-						}.Build(),
-						new ContextMenuFlyoutItemViewModelBuilder(Commands.LayoutAdaptive)
-						{
-							IsToggle = true
-						}.Build(),
-					],
+					Items = layoutItems,
 				},
 				new ContextMenuFlyoutItemViewModel()
 				{
