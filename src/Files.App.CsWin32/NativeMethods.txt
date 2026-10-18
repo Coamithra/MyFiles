@@ -80,6 +80,7 @@ FindFirstStreamW
 FindNextStreamW
 WIN32_FIND_STREAM_DATA
 RegisterApplicationRestart
+UnregisterApplicationRestart
 BROWSEINFOW
 SHBrowseForFolder
 SHGetPathFromIDList
